@@ -47,9 +47,15 @@ func (this *check) Pods(namespace string) (*apiv1.PodList, error) {
 func main() {
 	checktemplate := `we found {{(len .Nodes.Items)}} nodes={{(.NotZero (len .Nodes.Items) ).Check}}
 we found {{len (.Pods "").Items}} pods
-{{range (.Pods "").Items}}
-Pod {{printf "%-36s" .GetName}} {{printf "%-24s" .Status.Phase}}{{.ClusterName}}{{range .Spec.Containers}}
-    Container {{printf "%-24s" .Name}} {{printf "%-24s" .Image}} ({{printf "%t" ($.MatchString "^gcr.io/google[-_]containers" .Image).Check}}) {{.SecurityContext}}{{end}}{{end}}
+{{- range (.Pods "").Items}}
+Pod {{printf "%-36s" .GetName}} {{printf "%-24s" .Status.Phase}}{{.ClusterName}}
+{{- range .Spec.Containers}}
+    Container {{printf "%-24s" .Name -}}
+    {{ printf "%-24s" .Image -}}
+    {{ printf " (%t) " ($.MatchString "^gcr.io/google[-_]containers" .Image).Check}}
+    {{- .SecurityContext}}
+{{- end}}
+{{- end}}
 
 Result: Compliance {{.Check}}
 `

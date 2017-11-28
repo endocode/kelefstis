@@ -12,3 +12,6 @@ To be tested, there must be a running Kubernetes cluster configured in `.kube/co
 Please extend!
 
 Tests will follow! I promise!
+
+Install it with all deps by `go get -u github.com/endocode/kelefstis`, this will take some time fetching all dependencies.
+

@@ -1,4 +1,4 @@
-# kelestis
+# kelefstis
 Extensible Kubernetes compliance check tool
 
 This is an example how to connect to a K8S master from Go using the client api.

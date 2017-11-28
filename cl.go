@@ -8,7 +8,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"os"
 	"path/filepath"
-	"kelefstis/check"
+	"github.com/endocode/kelefstis/check"
 	"text/template"
 )
 

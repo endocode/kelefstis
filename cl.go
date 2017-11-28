@@ -8,7 +8,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"os"
 	"path/filepath"
-	"test-k8s-client/check"
+	"kelestis/check"
 	"text/template"
 )
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/docopt/docopt-go"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -10,26 +11,43 @@ import (
 	"path/filepath"
 	"github.com/endocode/kelefstis/check"
 	"text/template"
+	"io/ioutil"
 )
 
 // simple k8s client that lists all available pods
 // it gets config from $HOME/.kube/config
-func main() {
-	checktemplate := `we found {{(len .Nodes.Items)}} nodes={{(.NotZero (len .Nodes.Items) ).Check}}
-we found {{len (.Pods "").Items}} pods
-{{- range (.Pods "").Items}}
-Pod {{printf "%-36s" .GetName}} {{printf "%-24s" .Status.Phase}}{{.ClusterName}}
-{{- range .Spec.Containers}}
-    Container {{printf "%-24s" .Name -}}
-    {{ printf "%-24s" .Image -}}
-    {{ printf " (%t) " ($.MatchString "^gcr.io/google[-_]containers" .Image).Check}}
-    {{- .SecurityContext}}
-{{- end}}
-{{- end}}
+func main()  {
+	usage:=`kelefstis.
 
-Result: Compliance {{.Check}}
+		Usage:
+	kelefstis <check> [--kubeconfig <config>]
+	kelefstis [ -h | --help ]
+
+Options:
+	-h --help             Show this screen.
+		check                 Template with the checks to run
+	--kubeconfig <config>
 `
-	kubeconfig := filepath.Join(os.Getenv("HOME"), ".kube", "config")
+	arguments,_ := docopt.Parse(usage,nil,false,"kelefstis 0.1", false)
+
+	if arguments["--help"].(bool) {
+		fmt.Printf(usage)
+		return
+	}
+
+	fmt.Println(arguments)
+	checkfile:=(arguments["<check>"].(string))
+
+	kubeconfig, ok := arguments["--kubeconfig"].(string)
+	if ! ok {
+		kubeconfig = filepath.Join(os.Getenv("HOME"), ".kube", "config")
+	}
+
+	checktemplate, err := ioutil.ReadFile(checkfile)
+	if err != nil {
+		panic(err.Error())
+	}
+
 	fmt.Println("Using kubeconfig: ", kubeconfig)
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	if err != nil {
@@ -45,7 +63,7 @@ Result: Compliance {{.Check}}
 	chk := check.Check{true, clientset.CoreV1()}
 	listNodes(clientset)
 	listPods(clientset)
-	tmpl, err := template.New("test").Parse(checktemplate)
+	tmpl, err := template.New("test").Parse(string(checktemplate))
 	if err != nil {
 		panic(err)
 	}

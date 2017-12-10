@@ -6,7 +6,19 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientv1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	"github.com/sirupsen/logrus"
+	"os"
 )
+
+func init() {
+	log.Out = os.Stdout
+	log.Formatter=&logrus.JSONFormatter{}
+	log.Level=logrus.FatalLevel
+}
+
+var log = logrus.New()
+
+
 
 type Check struct {
 	Check     bool
@@ -25,6 +37,18 @@ func (this *Check) GE(n int, m int) *Check {
 
 func (this *Check) MatchString(r string, s string) *Check {
 	match, _ := regexp.MatchString(r, s)
+	if log.Level >= logrus.InfoLevel {
+		log.WithFields(logrus.Fields{
+			"regexp": r,
+			"string": s,
+		}).Info("matched:")
+	}
+	if ! match {
+		log.WithFields(logrus.Fields{
+			"regexp": r,
+			"string": s,
+		}).Error("failed")
+	}
 	this.Check = this.Check && match
 	return this
 }

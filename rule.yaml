@@ -1,0 +1,11 @@
+apiVersion: "stable.example.com/v1"
+kind: RuleChecker
+metadata:
+  name: rules
+  description: "my cluster, my rules"
+spec:
+  rules:
+    - domain: Node
+    - domain: Pod
+    - domain: Cluster
+      minNodes: 3

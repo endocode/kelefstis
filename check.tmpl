@@ -1,7 +1,7 @@
 we found {{(len .Nodes.Items)}} nodes={{(.NotZero (len .Nodes.Items) ).Check}}
 we found {{len (.Pods "").Items}} pods
 {{- range (.Pods "").Items}}
-Pod {{printf "%-36s" .GetName}} {{printf "%-24s" .Status.Phase}}{{.ClusterName}}
+Pod {{printf "%-36s" .GetName}} {{printf "%-24s %-24s" .Status.Phase .Namespace }}{{.ClusterName}}
 {{- range .Spec.Containers}}
     Container {{printf "%-24s" .Name -}}
     {{ printf "%-24s" .Image -}}

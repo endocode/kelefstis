@@ -15,6 +15,7 @@ import (
 	"io/ioutil"
 	"bytes"
 	"github.com/ghodss/yaml"
+	"time"
 )
 
 // simple k8s client that lists all available pods
@@ -22,7 +23,7 @@ import (
 func main()  {
 	usage:=`kelefstis.
 
-		Usage:
+Usage:
 	kelefstis <check> [--kubeconfig <config>]
 	kelefstis [ -h | --help ]
 
@@ -33,12 +34,12 @@ Options:
 `
 	arguments,_ := docopt.Parse(usage,nil,false,"kelefstis 0.1", false)
 
-	if arguments["--help"].(bool) {
+	if arguments["--help"].(bool)  || arguments["<check>"] == nil {
 		fmt.Printf(usage)
 		return
 	}
 
-	fmt.Println(arguments)
+
 	checkfile:=arguments["<check>"].(string)
 
 	kubeconfig, ok := arguments["--kubeconfig"].(string)
@@ -48,7 +49,8 @@ Options:
 
 	checktemplate, err := ioutil.ReadFile(checkfile)
 	if err != nil {
-		panic(err.Error())
+		fmt.Printf(usage)
+		return
 	}
 
 	fmt.Println("Using kubeconfig: ", kubeconfig)
@@ -130,17 +132,61 @@ func listResource(clientset *kubernetes.Clientset)  {
 	}
 */
 }
+/*
+
+created with https://mholt.github.io/json-to-go/
+
+ */
+type RuleChecker struct {
+	APIVersion string `json:"apiVersion"`
+	Kind       string `json:"kind"`
+	Metadata   struct {
+		ClusterName                string      `json:"clusterName"`
+		CreationTimestamp          time.Time   `json:"creationTimestamp"`
+		DeletionGracePeriodSeconds interface{} `json:"deletionGracePeriodSeconds"`
+		DeletionTimestamp          interface{} `json:"deletionTimestamp"`
+		Description                string      `json:"description"`
+		Initializers               interface{} `json:"initializers"`
+		Name                       string      `json:"name"`
+		Namespace                  string      `json:"namespace"`
+		ResourceVersion            string      `json:"resourceVersion"`
+		SelfLink                   string      `json:"selfLink"`
+		UID                        string      `json:"uid"`
+	} `json:"metadata"`
+	Spec struct {
+		Rules []struct {
+			Domain   string `json:"domain"`
+			MinNodes int    `json:"minNodes,omitempty"`
+		} `json:"rules"`
+	} `json:"spec"`
+}
 
 func listCRD(clientset *kubernetes.Clientset,group string, version string, crd string, resource string) {
-	raw, err := clientset.CoreV1().
+	rules := clientset.CoreV1().
 		RESTClient().
 			Get().
 			AbsPath("apis",group,version,crd,resource).
-			Do().Raw()
+			Do()
+
+	var rchck RuleChecker
+
+	fmt.Printf("%s", &rchck)
+
+	raw, err := rules.Raw()
+
+
+
+	var prettyJSON bytes.Buffer
+	err= json.Indent(&prettyJSON, raw, "", "\t")
+	json.Unmarshal(raw,rchck)
+	m,_ := json.Marshal(rchck)
+	fmt.Printf("%24s",m)
+	//	fmt.Printf("\n\n%s\n\n", prettyJSON)
 
 	if err!=nil {
 		panic(err.Error())
 	}
 	y, _:=yaml.JSONToYAML(raw)
-	fmt.Printf("%s",y)
+	fmt.Printf("\n\n%s",y)
+
 }

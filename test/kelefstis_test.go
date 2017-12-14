@@ -9,7 +9,7 @@ import (
 )
 
 func TestSomething(t *testing.T) {
-	clientset, checktemplate, err := kelefstis.ClientSet([]string{"/home/thomas/import/go/src/github.com/endocode/kelefstis/check.templ"})
+	clientset, checktemplate, err := kelefstis.ClientSet([]string{"../check.templ"})
 	assert.NotNil(t, clientset)
 	assert.NotNil(t,checktemplate)
 	assert.Nil(t,err)

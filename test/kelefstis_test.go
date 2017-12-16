@@ -2,14 +2,13 @@ package test
 
 
 import (
-"testing"
-"github.com/stretchr/testify/assert"
-
-	"github.com/endocode/kelefstis"
+	"testing"
+	"github.com/stretchr/testify/assert"
+	"github.com/endocode/kelefstis/client"
 )
 
 func TestSomething(t *testing.T) {
-	clientset, checktemplate, err := kelefstis.ClientSet([]string{"../check.templ"})
+	clientset, checktemplate, err := client.ClientSet([]string{"../check.templ"})
 	assert.NotNil(t, clientset)
 	assert.NotNil(t,checktemplate)
 	assert.Nil(t,err)

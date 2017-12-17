@@ -22,10 +22,12 @@ func main()  {
 		panic(err.Error())
 	}
 
+	/*
 	client.ListNodes(clientset)
 	client.ListPods(clientset)
 	client.ListResource(clientset)
+	*/
 
-	client.ListCRD(clientset, "stable.example.com", "v1", "rulecheckers","rules")
+//	client.ListCRD(clientset, "stable.example.com", "v1", "rulecheckers","rules")
 
 }

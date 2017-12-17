@@ -1,5 +1,5 @@
-we found {{len .Nodes.Items}} nodes={{(.NotZero (len .Nodes.Items) ).Check}}
-we found {{len (.Pods "").Items}} pods
+we found {{.NumberOfNodes}} nodes={{(.NotZero (.NumberOfNodes) ).Check}}
+we found {{.NumberOfPods ""}} pods
 {{- range (.Pods "").Items}}
 Pod {{printf "%-36s" .GetName}} {{printf "%-24s %-24s" .Status.Phase .Namespace }}{{.ClusterName}}
 {{- range .Spec.Containers}}

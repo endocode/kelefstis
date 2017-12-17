@@ -8,4 +8,5 @@ spec:
     - domain: Node
     - domain: Pod
     - domain: Cluster
+        Nodes:
       minNodes: 3

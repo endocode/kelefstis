@@ -15,3 +15,14 @@ Tests will follow! I promise!
 
 Install it with all deps by `go get -u github.com/endocode/kelefstis`, this will take some time fetching all dependencies.
 
+To run the tests successfully, you need to create a `CustomerResourceDefinition` for the RuleChecker and the rule defined in the yaml files
+
+```
+
+kubectl create -f rulecheckersr-rsd.yaml
+
+kubectl create -f rule.yaml	
+
+```
+
+

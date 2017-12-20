@@ -27,8 +27,10 @@ kubectl create -f rule.yaml
 
 ```
 
-Now the tests in `templ.yaml` shoud work
+Now the tests in `templ.yaml` should work
 
 ```
 kelefstis templ.yaml
 ```
+
+`kelefstis_test` creates and removes all the objects in the kubernetes test cluster now.

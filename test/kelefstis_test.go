@@ -5,30 +5,56 @@ import (
 	"testing"
 	"github.com/stretchr/testify/assert"
 	"github.com/endocode/kelefstis/client"
+	"os/exec"
+	"errors"
+	"text/template"
+	"os"
 )
 
+func create_rulechecker()(error){
+	cmd := "kubectl"
+
+	check :=  []string{"get","rchk","rules"}
+	if err := exec.Command(cmd, check...).Run(); err != nil {
+		args := []string{"create","-f","rulecheckers-rsd.yaml"}
+		exec.Command(cmd, args...).Run()
+		args = []string{"create","-f","rules.yaml"}
+		err= exec.Command(cmd, args...).Run();
+
+		return err
+	}
+
+	return nil
+}
+
+func delete_rulechecker()(error){
+	cmd := "kubectl"
+
+		args := []string{"delete","-f","rules.yaml"}
+		exec.Command(cmd, args...).Run()
+
+		args = []string{"delete","-f","rulecheckers-rsd.yaml"}
+		exec.Command(cmd, args...).Run();
+
+	check :=  []string{"get","rchk","rules"}
+	if err := exec.Command(cmd, check...).Run(); 	err!=nil {
+		return nil
+	} else {
+		return errors.New("remove failed, rules still exist")
+	}
+
+}
+
 func TestSomething(t *testing.T) {
+	assert.Nil(t,create_rulechecker())
 	clientset, checktemplate, err := client.ClientSet([]string{"../check.templ"})
 	assert.NotNil(t, clientset)
 	assert.NotNil(t,checktemplate)
 	assert.Nil(t,err)
+	chk := client.Check{true, clientset.CoreV1()}
 
-	// assert equality
-	assert.Equal(t, 123, 123, "they should be equal")
-
-	// assert inequality
-	assert.NotEqual(t, 123, 456, "they should not be equal")
-
-	// assert for nil (good for errors)
-	assert.Nil(t, nil)
-
-	// assert for not nil (good when you expect something)
-	if assert.NotNil(t, 2) {
-
-		// now we know that object isn't nil, we are safe to make
-		// further assertions without causing any errors
-		assert.Equal(t, "Something", "Something")
-
-	}
-
+	tmpl, err := template.New("test").Parse(string(checktemplate))
+	assert.Nil(t,err)
+	assert.Nil(t,tmpl.Execute(os.Stdout,&chk))
+	assert.Nil(t,delete_rulechecker())
 }

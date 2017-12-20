@@ -1,7 +1,8 @@
 we found {{.NumberOfNodes}} nodes={{(.NotZero (.NumberOfNodes) ).Check}}
 we found {{.NumberOfPods ""}} pods
 {{- range (.Pods "").Items}}
-Pod {{printf "%-36s" .GetName}} {{printf "%-24s %-24s" .Status.Phase .Namespace }}{{.ClusterName}}
+Pod {{printf "%-36s" .GetName}} {{printf "%-24s %-24s" .Status.Phase .Namespace }}
+{{.ClusterName}}
 {{- range .Spec.Containers}}
     Container {{printf "%-24s" .Name -}}
     {{ printf "%-24s" .Image -}}
@@ -9,5 +10,5 @@ Pod {{printf "%-36s" .GetName}} {{printf "%-24s %-24s" .Status.Phase .Namespace 
     {{- .SecurityContext}}
 {{- end}}
 {{- end}}
-
+{{(index (index (.Pods "").Items 0).Spec.Containers 0).Image}}
 Result: Compliance {{.Check}}

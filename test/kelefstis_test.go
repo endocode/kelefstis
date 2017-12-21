@@ -14,11 +14,11 @@ import (
 func create_rulechecker()(error){
 	cmd := "kubectl"
 
-	check :=  []string{"get","rchk","rules"}
+	check :=  []string{"get","trchk","test-rules"}
 	if err := exec.Command(cmd, check...).Run(); err != nil {
-		args := []string{"create","-f","rulecheckers-rsd.yaml"}
+		args := []string{"create","-f","test-rulecheckers-rsd.yaml"}
 		exec.Command(cmd, args...).Run()
-		args = []string{"create","-f","rules.yaml"}
+		args = []string{"create","-f","test-rules.yaml"}
 		err= exec.Command(cmd, args...).Run();
 
 		return err
@@ -30,13 +30,13 @@ func create_rulechecker()(error){
 func delete_rulechecker()(error){
 	cmd := "kubectl"
 
-		args := []string{"delete","-f","rules.yaml"}
+		args := []string{"delete","-f","test-rules.yaml"}
 		exec.Command(cmd, args...).Run()
 
-		args = []string{"delete","-f","rulecheckers-rsd.yaml"}
+		args = []string{"delete","-f","test-rulecheckers-rsd.yaml"}
 		exec.Command(cmd, args...).Run();
 
-	check :=  []string{"get","rchk","rules"}
+	check :=  []string{"get","trchk","test-rules"}
 	if err := exec.Command(cmd, check...).Run(); 	err!=nil {
 		return nil
 	} else {

@@ -10,5 +10,5 @@ Pod {{printf "%-36s" .GetName}} {{printf "%-24s %-24s" .Status.Phase .Namespace 
     {{- .SecurityContext}}
 {{- end}}
 {{- end}}
-{{(index (index (.Pods "").Items 0).Spec.Containers 0).Image}}
+{{(index (index (.Pods "").Items 0).Spec.Containers 0 ).Image}}
 Result: Compliance {{.Check}}

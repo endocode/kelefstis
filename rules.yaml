@@ -5,6 +5,16 @@ metadata:
   description: "my cluster, my rules"
 spec:
   rules:
-    - domain: Node
-    - domain: Pod
-    - domain: Cluster
+  -  pods:
+        namespace:
+          $eq: "lirumlarum"
+        spec:
+          containers:
+            image:
+              $matches: "asadasd"
+  - cluster:
+      min: 3
+      max: 10
+  - nodes:
+      memory:
+        min: 100GB

@@ -131,7 +131,10 @@ func ListCRD(clientset *kubernetes.Clientset,group string, version string, crd s
 	var prettyJSON bytes.Buffer
 	err= json.Indent(&prettyJSON, raw, "", "\t")
 	json.Unmarshal(raw,rchck)
-	m,_ := json.Marshal(rchck)
+	if err!=nil {
+		panic(err.Error())
+	}
+	m, err := json.Marshal(rchck)
 	fmt.Printf("%24s",m)
 	//	fmt.Printf("\n\n%s\n\n", prettyJSON)
 

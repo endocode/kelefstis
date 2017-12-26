@@ -1,12 +1,32 @@
 package client
 
+import (
+	"time"
+	"strings"
+	"fmt"
+)
+
 /*
 
 created with https://mholt.github.io/json-to-go/
 
  */
 type RuleChecker struct {
-	Kind string `json:"kind"`
+	APIVersion string `json:"apiVersion"`
+	Kind       string `json:"kind"`
+	Metadata   struct {
+		ClusterName                string      `json:"clusterName"`
+		CreationTimestamp          Time   `json:"creationTimestamp"`
+		DeletionGracePeriodSeconds interface{} `json:"deletionGracePeriodSeconds"`
+		DeletionTimestamp          interface{} `json:"deletionTimestamp"`
+		Description                string      `json:"description"`
+		Initializers               interface{} `json:"initializers"`
+		Name                       string      `json:"name"`
+		Namespace                  string      `json:"namespace"`
+		ResourceVersion            string      `json:"resourceVersion"`
+		SelfLink                   string      `json:"selfLink"`
+		UID                        string      `json:"uid"`
+	} `json:"metadata"`
 	Spec struct {
 		Rules []struct {
 			Pods struct {
@@ -16,7 +36,7 @@ type RuleChecker struct {
 				Spec struct {
 					Containers struct {
 						Image struct {
-							Matches string `json:"matches"`
+							Matches string `json:"$matches"`
 						} `json:"image"`
 					} `json:"containers"`
 				} `json:"spec"`
@@ -32,9 +52,26 @@ type RuleChecker struct {
 			} `json:"nodes,omitempty"`
 		} `json:"rules"`
 	} `json:"spec"`
-	APIVersion string `json:"apiVersion"`
-	Metadata   struct {
-		Name        string `json:"name"`
-		Description string `json:"description"`
-	} `json:"metadata"`
+}
+
+type Time struct {
+	time.Time
+}
+func (t *Time) String() string {
+	return t.Time.Format(time.RFC3339)
+}
+
+func (t *Time) UnmarshalJSON(buf []byte) error {
+	s := strings.Trim(string(buf), `"`)
+	fmt.Printf("Unmarshal %s\n",s)
+	tt, err := time.Parse(time.RFC3339, s)
+	if err != nil {
+		return err
+	}
+	t.Time = tt
+	return nil
+}
+
+func (t Time) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + t.Time.Format(time.RFC3339) + `"`), nil
 }

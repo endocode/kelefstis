@@ -45,7 +45,7 @@ func delete_rulechecker()(error){
 
 }
 
-func TestSomething(t *testing.T) {
+func TestArgParse(t *testing.T) {
 	assert.Nil(t,create_rulechecker())
 	clientset, checktemplate, err := client.ClientSet([]string{"../check.templ"})
 	assert.NotNil(t, clientset)

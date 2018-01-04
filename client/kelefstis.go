@@ -1,64 +1,74 @@
 package client
 
 import (
-	"fmt"
+	"bytes"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+
 	"github.com/docopt/docopt-go"
+	"github.com/ghodss/yaml"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
-	"os"
-	"path/filepath"
-	"io/ioutil"
-	"bytes"
-	"github.com/ghodss/yaml"
 
 	"reflect"
 )
 
-func ClientSet(argv []string) (*kubernetes.Clientset,string, error){
-	usage:=`kelefstis.
+func ClientSet(argv []string) (*kubernetes.Clientset, interface{}, interface{}, interface{}, error) {
+	usage := `kelefstis.
 
 Usage:
-	kelefstis <check> [--kubeconfig <config>]
+	kelefstis -t <check> [--kubeconfig <config>]
+	kelefstis <rules> [-k <kind>] [--kubeconfig <config>]
 	kelefstis [ -h | --help ]
-
 Options:
 	-h --help             Show this screen.
-		check                 Template with the checks to run
+	check                 Template with the checks to run
+	rules                 Name of the rules
+	-k kind                  Kind of the rules, defaults to rulechecker
 	--kubeconfig <config>
 `
 	if argv == nil && len(os.Args) > 1 {
 		argv = os.Args[1:]
 	}
-	arguments,_ := docopt.Parse(usage,argv,false,"kelefstis 0.1", false)
-
-	if arguments["--help"].(bool)  || arguments["<check>"] == nil {
-		fmt.Printf(usage)
-		os.Exit(1)
-	}
-
-	checkfile:=arguments["<check>"].(string)
-	checktemplate, err := ioutil.ReadFile(checkfile)
+	arguments, _ := docopt.Parse(usage, argv, false, "kelefstis 0.1", true)
+	fmt.Fprintf(os.Stderr, "%s\n", arguments)
 
 	kubeconfig, ok := arguments["--kubeconfig"].(string)
-	if ! ok {
+	if !ok {
 		kubeconfig = filepath.Join(os.Getenv("HOME"), ".kube", "config")
 	}
-
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	if err != nil {
-		fmt.Printf("   unusable, exiting")
-		os.Exit(3)
+		return nil, nil, nil, nil, errors.New("no kubeconfig found")
 	}
 
-	// create the clientset
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		os.Exit(4)
+		return nil, nil, nil, nil, errors.New("kubeconfig invalid")
 	}
-	return clientset, string( checktemplate), err
+	check, ok := arguments["<check>"].(string)
+	if ok {
+		checktemplate, err := ioutil.ReadFile(check)
+		return clientset, string(checktemplate), nil, nil, err
+
+	}
+	if arguments["<rules>"] != nil {
+
+		kind, ok := arguments["<kind>"].(string)
+		if !ok {
+			kind = "rulechecker"
+		}
+
+		return clientset, nil, arguments["<rules>"], kind, nil
+
+	}
+	return nil, nil, nil, nil, errors.New("this should not happen")
 }
 
 func ListPods(clientset *kubernetes.Clientset) (*apiv1.PodList, error) {
@@ -78,7 +88,7 @@ func ListPods(clientset *kubernetes.Clientset) (*apiv1.PodList, error) {
 
 func ListNodes(clientset *kubernetes.Clientset) (*apiv1.NodeList, error) {
 	nodes, err := clientset.CoreV1().Nodes().List(metav1.ListOptions{})
-	if err!=nil {
+	if err != nil {
 		panic(err.Error())
 	}
 	if len(nodes.Items) > 0 {
@@ -91,17 +101,17 @@ func ListNodes(clientset *kubernetes.Clientset) (*apiv1.NodeList, error) {
 	return nodes, err
 }
 
-func ListResource(clientset *kubernetes.Clientset)  {
-	raw ,err := clientset.CoreV1().
+func ListResource(clientset *kubernetes.Clientset) {
+	raw, err := clientset.CoreV1().
 		RESTClient().Get().
 		Resource("").DoRaw()
 
-	if err!=nil {
+	if err != nil {
 		panic(err.Error())
 	}
 	var prettyJSON bytes.Buffer
-	err= json.Indent(&prettyJSON, raw, "", "\t")
-	fmt.Printf("--------> %-24s\n\n", prettyJSON)
+	err = json.Indent(&prettyJSON, raw, "", "\t")
+	fmt.Printf("--------> %-24s\n\n", prettyJSON.String())
 	/*if len(nodes.Items) > 0 {
 		fmt.Printf("There are %d nodes in the cluster\n", len(nodes.Items))
 		for _, node := range nodes.Items {
@@ -109,7 +119,7 @@ func ListResource(clientset *kubernetes.Clientset)  {
 		}
 
 	}
-*/
+	*/
 }
 
 func display(s interface{}, t string) {
@@ -117,7 +127,7 @@ func display(s interface{}, t string) {
 	reflectType := reflect.TypeOf(s).Elem()
 	reflectValue := reflect.ValueOf(s).Elem()
 
-	fmt.Printf("%s#ReflectType=%s NumField=%d\n",t, reflectType, reflectType.NumField() )
+	fmt.Printf("%s#ReflectType=%s NumField=%d\n", t, reflectType, reflectType.NumField())
 
 	for i := 0; i < reflectType.NumField(); i++ {
 		typeName := reflectType.Field(i).Name
@@ -131,7 +141,7 @@ func display(s interface{}, t string) {
 			fmt.Printf("%sArray: %s : %s(%s)\n", t, typeName, valueValue, valueType)
 		case reflect.Struct:
 			fmt.Printf("%s%s : %s\n", t, typeName, valueType)
-			display(&valueValue,"\t\t")
+			display(&valueValue, "\t\t")
 		default:
 			fmt.Printf("Default: %s%s : %s(%s)\n", t, typeName, valueValue, valueType)
 		}
@@ -147,7 +157,7 @@ func printValue(prefix string, v reflect.Value) {
 	for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
 		if v.Kind() == reflect.Ptr {
 			// Check for recursive data
-			if ! v.CanInterface() {
+			if !v.CanInterface() {
 				return
 			}
 
@@ -164,14 +174,14 @@ func printValue(prefix string, v reflect.Value) {
 		}
 	case reflect.Struct:
 		t := v.Type() // use type to get number and names of fields
-		fmt.Printf("%sStruct %d fields\n",prefix, t.NumField())
+		fmt.Printf("%sStruct %d fields\n", prefix, t.NumField())
 
 		for i := 0; i < t.NumField(); i++ {
-			if ! t.Field(i).Anonymous {
+			if !t.Field(i).Anonymous {
 				fmt.Printf("%s%s: ", prefix, t.Field(i).Name)
 				printValue(prefix+"\t", v.Field(i))
 			}
-			if v.Type() == reflect.TypeOf(Time{}){
+			if v.Type() == reflect.TypeOf(Time{}) {
 				fmt.Printf("%s%s: %s\n", prefix, t.Field(i).Name, v.Interface())
 			}
 		}
@@ -184,47 +194,48 @@ func printValue(prefix string, v reflect.Value) {
 			if v.CanInterface() {
 				fmt.Printf("default Interface: %v\n", v.Interface())
 			} else {
-			fmt.Printf("default: %s\n", v.Type())
+				fmt.Printf("default: %s\n", v.Type())
 			}
 		}
 	}
 }
 
-
-func ListCRD(clientset *kubernetes.Clientset,group string, version string, crd string, resource string) {
+func ListCRD(clientset *kubernetes.Clientset, group string, version string, crd string, resource string) error {
 	rules := clientset.
 		CoreV1().
 		RESTClient().
-			Get().
-			AbsPath("apis",group,version,crd,resource).
-			Do()
+		Get().
+		AbsPath("apis", group, version, crd, resource).
+		Do()
 
 	var rchck RuleChecker
 
-
 	raw, err := rules.Raw()
-
-
-
+	if err != nil {
+		return err
+	}
 	var prettyJSON bytes.Buffer
-	err= json.Indent(&prettyJSON, raw, "", "\t")
-	json.Unmarshal(raw,&rchck)
-//	display(&rchck,"")
-	if err!=nil {
-		panic(err.Error())
+	err = json.Indent(&prettyJSON, raw, "", "\t")
+	fmt.Printf("\n\n%s\n\n", prettyJSON.String())
+	json.Unmarshal(raw, &rchck)
+	//	display(&rchck,"")
+	if err != nil {
+		return err
 	}
 
-	printValue("",reflect.ValueOf(rchck))
-/*
-	m, err := json.Marshal(rchck)
+	printValue("", reflect.ValueOf(rchck))
+	/*
+		m, err := json.Marshal(rchck)
 
-	fmt.Printf("%24s",m)
-	fmt.Printf("\n\n%s\n\n", prettyJSON)
+		fmt.Printf("%24s",m)
+		fmt.Printf("\n\n%s\n\n", prettyJSON)
 
-	if err!=nil {
-		panic(err.Error())
-	}
-*/
-	y, _:=yaml.JSONToYAML(raw)
-	fmt.Printf("\n\n%s",y)
+		if err!=nil {
+			panic(err.Error())
+		}
+	*/
+	y, _ := yaml.JSONToYAML(raw)
+	fmt.Printf("\n\n%s", y)
+
+	return nil
 }

@@ -3,7 +3,7 @@ package client
 import (
 	"time"
 	"strings"
-	"fmt"
+//	"fmt"
 )
 
 /*
@@ -63,7 +63,7 @@ func (t *Time) String() string {
 
 func (t *Time) UnmarshalJSON(buf []byte) error {
 	s := strings.Trim(string(buf), `"`)
-	fmt.Printf("Unmarshal %s\n",s)
+	//fmt.Printf("Unmarshal %s\n",s)
 	tt, err := time.Parse(time.RFC3339, s)
 	if err != nil {
 		return err

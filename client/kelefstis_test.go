@@ -1,4 +1,4 @@
-package main
+package client
 
 import (
 	"errors"
@@ -7,7 +7,6 @@ import (
 	"testing"
 	"text/template"
 
-	"github.com/endocode/kelefstis/client"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,9 +15,9 @@ func create_rulechecker() error {
 
 	check := []string{"get", "trchk", "test-rules"}
 	if err := exec.Command(cmd, check...).Run(); err != nil {
-		args := []string{"create", "-f", "test/test-rulecheckers-rsd.yaml"}
+		args := []string{"create", "-f", "test-rulecheckers-rsd.yaml"}
 		exec.Command(cmd, args...).Run()
-		args = []string{"create", "-f", "test/test-rules.yaml"}
+		args = []string{"create", "-f", "test-rules.yaml"}
 		err = exec.Command(cmd, args...).Run()
 
 		return err
@@ -30,10 +29,10 @@ func create_rulechecker() error {
 func delete_rulechecker() error {
 	cmd := "kubectl"
 
-	args := []string{"delete", "-f", "test/test-rules.yaml"}
+	args := []string{"delete", "-f", "test-rules.yaml"}
 	exec.Command(cmd, args...).Run()
 
-	args = []string{"delete", "-f", "test/test-rulecheckers-rsd.yaml"}
+	args = []string{"delete", "-f", "test-rulecheckers-rsd.yaml"}
 	exec.Command(cmd, args...).Run()
 
 	check := []string{"get", "trchk", "test-rules"}
@@ -47,13 +46,13 @@ func delete_rulechecker() error {
 
 func TestArgParseTemplate(t *testing.T) {
 	assert.Nil(t, create_rulechecker())
-	clientset, checktemplate, rules, kind, err := client.ClientSet([]string{"-t", "check.tmpl"})
+	clientset, checktemplate, rules, kind, err := ClientSet([]string{"-t", "../check.tmpl"})
 	assert.Nil(t, rules)
 	assert.Nil(t, kind)
 	assert.NotNil(t, clientset)
 	assert.NotNil(t, checktemplate)
 	assert.Nil(t, err)
-	chk := client.Check{Check: true, Clientset: clientset.CoreV1()}
+	chk := Check{Check: true, Clientset: clientset.CoreV1()}
 
 	tmpl, err := template.New("test").Parse(checktemplate.(string))
 	assert.Nil(t, err)
@@ -63,16 +62,16 @@ func TestArgParseTemplate(t *testing.T) {
 
 func TestArgParseRules(t *testing.T) {
 	assert.Nil(t, create_rulechecker())
-	clientset, checktemplate, rules, kind, err := client.ClientSet([]string{"-k", "testrulecheckers", "test-rules"})
+	clientset, checktemplate, rules, kind, err := ClientSet([]string{"-k", "testrulecheckers", "test-rules"})
 	assert.Nil(t, checktemplate)
 	assert.NotNil(t, rules)
 	assert.NotNil(t, "", kind)
 	assert.NotNil(t, clientset)
 	assert.Nil(t, checktemplate)
 	assert.Nil(t, err)
-	chk := client.Check{Check: true, Clientset: clientset.CoreV1()}
+	chk := Check{Check: true, Clientset: clientset.CoreV1()}
 	assert.True(t, chk.Check)
-	err = client.ListCRD(clientset, "stable.example.com", "v1", kind.(string), rules.(string))
+	err = ListCRD(clientset, "stable.example.com", "v1", kind.(string), rules.(string))
 	assert.Nil(t, err)
 	assert.Nil(t, delete_rulechecker())
 }

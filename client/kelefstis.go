@@ -60,7 +60,7 @@ Options:
 	}
 	if arguments["<rules>"] != nil {
 
-		kind, ok := arguments["<kind>"].(string)
+		kind, ok := arguments["-k"].(string)
 		if !ok {
 			kind = "rulechecker"
 		}

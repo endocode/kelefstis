@@ -14,7 +14,7 @@ before_script:
 # Fix the kubectl context, as it's often stale.
 - minikube update-context
 # Wait for all pods in Kubernetes to be up and ready.
-- until [[ 18 -le $(kubectl get pods --all-namespaces -o jsonpath-file=.travis-jsonpath | wc -l ) ]]; do  kubectl get pods --all-namespaces -o jsonpath-file=.travis-jsonpath | wc -l; sleep 1; done
+- let PODS=0; until [[ 12 -le $PODS]]; do PODS=$(kubectl get pods --all-namespaces -o jsonpath-file=.travis-jsonpath | wc -l); echo waiting... $PODS pods sleep 1; done
 language: go
 
 go:

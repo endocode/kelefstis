@@ -1,0 +1,2 @@
+{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.status}
+{end}{end}

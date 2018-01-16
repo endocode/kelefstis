@@ -16,6 +16,8 @@ before_script:
 # enable addons to get more stuff for testing
 - minikube addons enable heapster
 - minikube addons enable dashboard
+# list the installed addons
+- minikube addons list
 # Wait for all pods in Kubernetes to be up and ready.
 - let PODS=0; until [[ 18 -le $PODS ]]; do PODS=$(kubectl get pods --all-namespaces -o jsonpath-file=.travis-jsonpath | wc -l); echo waiting... $PODS pods ; sleep 5; done
 language: go

@@ -14,8 +14,8 @@ before_script:
 # Fix the kubectl context, as it's often stale.
 - minikube update-context
 # enable addons to get more stuff for testing
-- minikube addons enable heapster
-- minikube addons enable dashboard
+- sudo minikube addons enable heapster
+- sudo minikube addons enable dashboard
 # list the installed addons
 - minikube addons list
 # Wait for all pods in Kubernetes to be up and ready.

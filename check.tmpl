@@ -6,7 +6,7 @@ Pod {{printf "%-36s" .GetName}} {{printf "%-24s %-24s" .Status.Phase .Namespace 
 {{- range .Spec.Containers}}
     Container {{printf "%-24s" .Name -}}
     {{ printf "%-24s" .Image -}}
-    {{ printf " (%t) " ($.MatchString "^gcr.io/google[-_]containers" .Image).Check}}
+    {{ printf " (%t) " ($.MatchString "^gcr.io/(google[-_]containers|k8s-minikube)" .Image).Check}}
     {{- .SecurityContext}}
 {{- end}}
 {{- end}}

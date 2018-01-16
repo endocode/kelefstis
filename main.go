@@ -11,7 +11,7 @@ import (
 // it gets config from $HOME/.kube/config
 func main() {
 
-	clientset, checktemplate, rules, kind, err := client.ClientSet(nil)
+	clientset, checktemplate, rules, kind, _, err := client.ClientSet(nil)
 	if err != nil {
 		panic(err)
 	}

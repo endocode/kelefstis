@@ -7,7 +7,7 @@ spec:
   rules:
   -  pods:
         namespace:
-          $eq: "lirumlarum"
+          $eq: "default"
         spec:
           containers:
             image:

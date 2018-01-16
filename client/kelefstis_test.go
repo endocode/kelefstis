@@ -45,8 +45,9 @@ func delete_rulechecker() error {
 }
 
 func TestArgParseTemplate(t *testing.T) {
-	assert.Nil(t, create_rulechecker())
-	clientset, checktemplate, rules, kind, err := ClientSet([]string{"-t", "../check.tmpl"})
+	assert.Nil(t, create)
+	clientset, checktemplate, rules, kind, debug, err := ClientSet([]string{"-t", "../check.tmpl"})
+	assert.False(t, debug)
 	assert.Nil(t, rules)
 	assert.Nil(t, kind)
 	assert.NotNil(t, clientset)
@@ -57,12 +58,12 @@ func TestArgParseTemplate(t *testing.T) {
 	tmpl, err := template.New("test").Parse(checktemplate.(string))
 	assert.Nil(t, err)
 	assert.Nil(t, tmpl.Execute(os.Stdout, &chk))
-	assert.Nil(t, delete_rulechecker())
 }
 
 func TestArgParseRules(t *testing.T) {
-	assert.Nil(t, create_rulechecker())
-	clientset, checktemplate, rules, kind, err := ClientSet([]string{"-k", "testrulecheckers", "test-rules"})
+	assert.Nil(t, create)
+	clientset, checktemplate, rules, kind, debug, err := ClientSet([]string{"-k", "testrulecheckers", "test-rules"})
+	assert.False(t, debug)
 	assert.Nil(t, checktemplate)
 	assert.NotNil(t, rules)
 	assert.NotNil(t, "", kind)
@@ -73,5 +74,16 @@ func TestArgParseRules(t *testing.T) {
 	assert.True(t, chk.Check)
 	err = ListCRD(clientset, "stable.example.com", "v1", kind.(string), rules.(string))
 	assert.Nil(t, err)
-	assert.Nil(t, delete_rulechecker())
+}
+
+var create, delete error
+
+func TestMain(m *testing.M) {
+	create = create_rulechecker()
+	code := m.Run()
+	delete = delete_rulechecker()
+	if delete != nil {
+		panic(delete)
+	}
+	os.Exit(code)
 }

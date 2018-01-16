@@ -1,24 +1,24 @@
 package client
 
 import (
-	"time"
 	"strings"
-//	"fmt"
+	"time"
+	//	"fmt"
 )
 
 /*
 
 created with https://mholt.github.io/json-to-go/
 
- */
+*/
 type RuleChecker struct {
 	APIVersion string `json:"apiVersion"`
 	Kind       string `json:"kind"`
 	Metadata   struct {
 		ClusterName                string      `json:"clusterName"`
-		CreationTimestamp          Time   `json:"creationTimestamp"`
-		DeletionGracePeriodSeconds interface{} `json:"deletionGracePeriodSeconds"`
-		DeletionTimestamp          interface{} `json:"deletionTimestamp"`
+		CreationTimestamp          Time        `json:"creationTimestamp"`
+		DeletionGracePeriodSeconds int         `json:"deletionGracePeriodSeconds"`
+		DeletionTimestamp          Time        `json:"deletionTimestamp"`
 		Description                string      `json:"description"`
 		Initializers               interface{} `json:"initializers"`
 		Name                       string      `json:"name"`
@@ -57,6 +57,7 @@ type RuleChecker struct {
 type Time struct {
 	time.Time
 }
+
 func (t *Time) String() string {
 	return t.Time.Format(time.RFC3339)
 }

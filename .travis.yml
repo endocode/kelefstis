@@ -13,8 +13,11 @@ before_script:
 - sudo minikube start --vm-driver=none 
 # Fix the kubectl context, as it's often stale.
 - minikube update-context
+# enable addons to get more stuff for testing
+- minikube addons enable heapster
+- minikube addons enable dashboard
 # Wait for all pods in Kubernetes to be up and ready.
-- let PODS=0; until [[ 12 -le $PODS ]]; do PODS=$(kubectl get pods --all-namespaces -o jsonpath-file=.travis-jsonpath | wc -l); echo waiting... $PODS pods ; sleep 5; done
+- let PODS=0; until [[ 18 -le $PODS ]]; do PODS=$(kubectl get pods --all-namespaces -o jsonpath-file=.travis-jsonpath | wc -l); echo waiting... $PODS pods ; sleep 5; done
 language: go
 
 go:

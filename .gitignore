@@ -1,0 +1,7 @@
+.idea
+.vscode
+*.out
+debug*
+kelefstis
+vendor
+*.lock

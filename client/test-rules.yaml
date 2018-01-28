@@ -1,8 +1,9 @@
 apiVersion: "stable.example.com/v1"
 kind: TestRuleChecker
 metadata:
-  name: test-rules
+  name: "test-rules"
   description: "my cluster, my rules"
+  clusterName: "my cluster"
 spec:
   rules:
   -  pods:
@@ -11,7 +12,8 @@ spec:
         spec:
           containers:
             image:
-              $matches: "asadasd"
+              matches:
+                $matches: "asadasd"
   - cluster:
       min: 3
       max: 10

@@ -153,9 +153,7 @@ func display(s interface{}, t string) {
 }
 
 func printValue(prefix string, path string, v reflect.Value) {
-	fmt.Printf("%s ", path)
-	//	fmt.Printf("%s: ", v.Type())
-
+	fmt.Printf("%s%s ", prefix, path)
 	// Drill down through pointers and interfaces to get a value we can print.
 	for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
 		if v.Kind() == reflect.Ptr {
@@ -167,7 +165,6 @@ func printValue(prefix string, path string, v reflect.Value) {
 		}
 		v = v.Elem()
 	}
-
 	switch v.Kind() {
 	case reflect.Slice, reflect.Array:
 		fmt.Printf("Array %d elements\n", v.Len())
@@ -192,7 +189,7 @@ func printValue(prefix string, path string, v reflect.Value) {
 	case reflect.Invalid:
 		fmt.Printf("Invalid!\n")
 	case reflect.String:
-		fmt.Printf("String: %v\n", v.Interface())
+		fmt.Printf("%s String: #%s#\n", prefix, v)
 	default:
 		{
 			if v.CanInterface() {
@@ -218,10 +215,11 @@ func ListCRD(clientset *kubernetes.Clientset, group string, version string, crd 
 	if err != nil {
 		return err
 	}
-	/* 	var prettyJSON bytes.Buffer
-	   	err = json.Indent(&prettyJSON, raw, "", "\t")
-	   	fmt.Printf("\n\n%s\n\n", prettyJSON.String())
-	*/
+	var prettyJSON bytes.Buffer
+	err = json.Indent(&prettyJSON, raw, "", "\t")
+	//
+	fmt.Printf("\n-------------\n%s\n----------\n", prettyJSON.String())
+
 	json.Unmarshal(raw, &rchck)
 	//	display(&rchck,"")
 	if err != nil {
@@ -229,6 +227,7 @@ func ListCRD(clientset *kubernetes.Clientset, group string, version string, crd 
 	}
 
 	printValue("", "", reflect.ValueOf(rchck))
+	//display(rchck, "")
 	/*
 			m, err := json.Marshal(rchck)
 

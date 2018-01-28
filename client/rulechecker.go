@@ -1,6 +1,7 @@
 package client
 
 import (
+	"fmt"
 	"strings"
 	"time"
 	//	"fmt"
@@ -63,16 +64,21 @@ func (t *Time) String() string {
 }
 
 func (t *Time) UnmarshalJSON(buf []byte) error {
-	s := strings.Trim(string(buf), `"`)
-	//fmt.Printf("Unmarshal %s\n",s)
-	tt, err := time.Parse(time.RFC3339, s)
-	if err != nil {
-		return err
+	b := string(buf)
+	if b == "null" {
+		t.Time = time.Time{}
+	} else {
+		s := strings.Trim(b, `"`)
+		tt, err := time.Parse(time.RFC3339, s)
+		if err != nil {
+			fmt.Printf("Error %s\n", err)
+			return err
+		}
+		t.Time = tt
 	}
-	t.Time = tt
 	return nil
 }
 
-func (t Time) MarshalJSON() ([]byte, error) {
+func (t *Time) MarshalJSON() ([]byte, error) {
 	return []byte(`"` + t.Time.Format(time.RFC3339) + `"`), nil
 }

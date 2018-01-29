@@ -22,7 +22,5 @@ spec:
                   items:
                     domain:
                       type: string
-                    required:
-                      - domain
-                    pattern: "(Cluster|Node|Pod)"
+                      pattern: "(Cluster|Node|Pod)"
 

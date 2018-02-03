@@ -71,7 +71,7 @@ func TestArgParseRules(t *testing.T) {
 	assert.Nil(t, err)
 	chk := Check{Check: true, Clientset: clientset.CoreV1()}
 	assert.True(t, chk.Check)
-	err = listCRD(clientset, "stable.example.com", "v1", kind.(string), rules.(string))
+	err = ListCRD(clientset, "stable.example.com", "v1", kind.(string), rules.(string))
 	assert.Nil(t, err)
 }
 

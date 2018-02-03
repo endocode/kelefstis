@@ -202,7 +202,8 @@ func printValue(prefix string, path string, v reflect.Value) {
 	}
 }
 
-func listCRD(clientset *kubernetes.Clientset, group string, version string, crd string, resource string) error {
+//ListCRD is to check by a raw template. To be removed
+func ListCRD(clientset *kubernetes.Clientset, group string, version string, crd string, resource string) error {
 	rules := clientset.
 		CoreV1().
 		RESTClient().

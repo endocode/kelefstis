@@ -18,7 +18,8 @@ import (
 	"reflect"
 )
 
-func ClientSet(argv []string) (*kubernetes.Clientset, interface{}, interface{}, interface{}, bool, error) {
+//Set fetches the ClientSet and other objects from the arguments and config
+func Set(argv []string) (*kubernetes.Clientset, interface{}, interface{}, interface{}, bool, error) {
 	usage := `kelefstis.
 
 Usage:
@@ -74,7 +75,7 @@ Options:
 	return nil, nil, nil, nil, debug, errors.New("this should not happen")
 }
 
-func ListPods(clientset *kubernetes.Clientset) (*apiv1.PodList, error) {
+func listPods(clientset *kubernetes.Clientset) (*apiv1.PodList, error) {
 	pods, err := clientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	if err != nil {
 		panic(err.Error())
@@ -89,7 +90,7 @@ func ListPods(clientset *kubernetes.Clientset) (*apiv1.PodList, error) {
 	return pods, err
 }
 
-func ListNodes(clientset *kubernetes.Clientset) (*apiv1.NodeList, error) {
+func listNodes(clientset *kubernetes.Clientset) (*apiv1.NodeList, error) {
 	nodes, err := clientset.CoreV1().Nodes().List(metav1.ListOptions{})
 	if err != nil {
 		panic(err.Error())
@@ -104,7 +105,7 @@ func ListNodes(clientset *kubernetes.Clientset) (*apiv1.NodeList, error) {
 	return nodes, err
 }
 
-func ListResource(clientset *kubernetes.Clientset) {
+func listResource(clientset *kubernetes.Clientset) {
 	raw, err := clientset.CoreV1().
 		RESTClient().Get().
 		Resource("").DoRaw()
@@ -201,7 +202,7 @@ func printValue(prefix string, path string, v reflect.Value) {
 	}
 }
 
-func ListCRD(clientset *kubernetes.Clientset, group string, version string, crd string, resource string) error {
+func listCRD(clientset *kubernetes.Clientset, group string, version string, crd string, resource string) error {
 	rules := clientset.
 		CoreV1().
 		RESTClient().

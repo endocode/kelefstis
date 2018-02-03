@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func create_rulechecker() error {
+func createRulechecker() error {
 	cmd := "kubectl"
 
 	check := []string{"get", "trchk", "test-rules"}
@@ -26,7 +26,7 @@ func create_rulechecker() error {
 	return nil
 }
 
-func delete_rulechecker() error {
+func deleteRulechecker() error {
 	cmd := "kubectl"
 
 	args := []string{"delete", "-f", "test-rules.yaml"}
@@ -38,15 +38,14 @@ func delete_rulechecker() error {
 	check := []string{"get", "trchk", "test-rules"}
 	if err := exec.Command(cmd, check...).Run(); err != nil {
 		return nil
-	} else {
-		return errors.New("remove failed, rules still exist")
 	}
 
+	return errors.New("remove failed, rules still exist")
 }
 
 func TestArgParseTemplate(t *testing.T) {
 	assert.Nil(t, create)
-	clientset, checktemplate, rules, kind, debug, err := ClientSet([]string{"-t", "../check.tmpl"})
+	clientset, checktemplate, rules, kind, debug, err := Set([]string{"-t", "../check.tmpl"})
 	assert.False(t, debug)
 	assert.Nil(t, rules)
 	assert.Nil(t, kind)
@@ -62,7 +61,7 @@ func TestArgParseTemplate(t *testing.T) {
 
 func TestArgParseRules(t *testing.T) {
 	assert.Nil(t, create)
-	clientset, checktemplate, rules, kind, debug, err := ClientSet([]string{"-k", "testrulecheckers", "test-rules"})
+	clientset, checktemplate, rules, kind, debug, err := Set([]string{"-k", "testrulecheckers", "test-rules"})
 	assert.False(t, debug)
 	assert.Nil(t, checktemplate)
 	assert.NotNil(t, rules)
@@ -72,16 +71,16 @@ func TestArgParseRules(t *testing.T) {
 	assert.Nil(t, err)
 	chk := Check{Check: true, Clientset: clientset.CoreV1()}
 	assert.True(t, chk.Check)
-	err = ListCRD(clientset, "stable.example.com", "v1", kind.(string), rules.(string))
+	err = listCRD(clientset, "stable.example.com", "v1", kind.(string), rules.(string))
 	assert.Nil(t, err)
 }
 
 var create, delete error
 
 func TestMain(m *testing.M) {
-	create = create_rulechecker()
+	create = createRulechecker()
 	code := m.Run()
-	delete = delete_rulechecker()
+	delete = deleteRulechecker()
 	if delete != nil {
 		panic(delete)
 	}

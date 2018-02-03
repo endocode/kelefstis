@@ -7,7 +7,7 @@ import (
 	//	"fmt"
 )
 
-/*
+/*The RuleChecker holds all the data to check rules
 
 created with https://mholt.github.io/json-to-go/
 
@@ -55,14 +55,18 @@ type RuleChecker struct {
 	} `json:"spec"`
 }
 
+//Time for the RFC3339 marshalling
 type Time struct {
 	time.Time
 }
 
+//String returns Time as RFC3339 string
 func (t *Time) String() string {
 	return t.Time.Format(time.RFC3339)
 }
 
+// UnmarshalJSON unmarshals the Time struct
+//from a RFC3339 byte buffer and handles null values
 func (t *Time) UnmarshalJSON(buf []byte) error {
 	b := string(buf)
 	if b == "null" {
@@ -79,6 +83,7 @@ func (t *Time) UnmarshalJSON(buf []byte) error {
 	return nil
 }
 
+//MarshalJSON converts Time to a RFC3339 byte arry
 func (t *Time) MarshalJSON() ([]byte, error) {
 	return []byte(`"` + t.Time.Format(time.RFC3339) + `"`), nil
 }

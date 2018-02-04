@@ -5,9 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html/template"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/docopt/docopt-go"
 	apiv1 "k8s.io/api/core/v1"
@@ -34,11 +37,26 @@ Options:
 	-d 	                  debug
 	--kubeconfig <config>
 `
+	var ok bool
+	help := (len(os.Args) == 1)
 	if argv == nil && len(os.Args) > 1 {
 		argv = os.Args[1:]
 	}
-	arguments, _ := docopt.Parse(usage, argv, false, "kelefstis 0.1", true)
+	arguments, err := docopt.Parse(usage, argv, false, "kelefstis 0.1", true)
 	//	fmt.Fprintf(os.Stderr, "%s\n", arguments)
+
+	if !help {
+		help, ok = arguments["-h"].(bool)
+	}
+
+	if !help {
+		help, ok = arguments["--help"].(bool)
+	}
+
+	if help || err != nil {
+		fmt.Print(usage)
+		os.Exit(0)
+	}
 
 	var debug bool
 	_, debug = arguments["-d"].(string)
@@ -153,7 +171,7 @@ func display(s interface{}, t string) {
 	}
 }
 
-func printValue(prefix string, path string, v reflect.Value) {
+func printValue(buf io.Writer, prefix string, path string, template string, v reflect.Value) {
 	fmt.Printf("%s%s ", prefix, path)
 	// Drill down through pointers and interfaces to get a value we can print.
 	for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
@@ -171,7 +189,8 @@ func printValue(prefix string, path string, v reflect.Value) {
 		fmt.Printf("Array %d elements\n", v.Len())
 		for i := 0; i < v.Len(); i++ {
 			fmt.Printf("%s%d: ", prefix, i)
-			printValue(prefix+"\t", fmt.Sprintf(path+"[%d]", i), v.Index(i))
+			indexedTemplate := fmt.Sprintf("index (%s %d)", template, i)
+			printValue(buf, prefix+"\t", fmt.Sprintf("%s[%d]", path, i), indexedTemplate, v.Index(i))
 		}
 	case reflect.Struct:
 		t := v.Type()
@@ -181,7 +200,8 @@ func printValue(prefix string, path string, v reflect.Value) {
 		for i := 0; i < t.NumField(); i++ {
 			if !t.Field(i).Anonymous {
 				fmt.Printf("%s%s: ", prefix, t.Field(i).Name)
-				printValue(prefix+"\t", path+"."+t.Field(i).Name, v.Field(i))
+				fieldName := "." + t.Field(i).Name
+				printValue(buf, prefix+"\t", path+fieldName, template+fieldName, v.Field(i))
 			}
 			if v.Type() == reflect.TypeOf(Time{}) {
 				fmt.Printf("%s%s: %s\n", prefix, t.Field(i).Name, v.Interface())
@@ -190,7 +210,11 @@ func printValue(prefix string, path string, v reflect.Value) {
 	case reflect.Invalid:
 		fmt.Printf("Invalid!\n")
 	case reflect.String:
-		fmt.Printf("%s String: #%s#\n", prefix, v)
+		//fmt.Fprintf(buf, "%s{{$.MatchString \"heapster\" (index (index ($.Pods \"\").Items 0).Spec.Containers 0).Image}}\n", path)
+		//{{ (%s", prefix, path)
+		//fmt.Fprintf(buf, ") 0}}")
+		fmt.Printf("%s String: %q\n", prefix, v)
+		fmt.Printf("%s Template: (%s %s)\n", prefix, template, v.String())
 	default:
 		{
 			if v.CanInterface() {
@@ -219,16 +243,30 @@ func ListCRD(clientset *kubernetes.Clientset, group string, version string, crd 
 	}
 	var prettyJSON bytes.Buffer
 	err = json.Indent(&prettyJSON, raw, "", "\t")
-	//
-	fmt.Printf("\n-------------\n%s\n----------\n", prettyJSON.String())
+	//	fmt.Printf("\n-------------\n%s\n----------\n", prettyJSON.String())
 
 	json.Unmarshal(raw, &rchck)
 	//	display(&rchck,"")
 	if err != nil {
 		return err
 	}
+	bufWriter := bytes.NewBufferString("")
+	printValue(bufWriter, "", "", "", reflect.ValueOf(rchck))
+	checkTemplate := string(bufWriter.Bytes())
 
-	printValue("", "", reflect.ValueOf(rchck))
+	//fmt.Printf(">>>%s<<<\n", checkTemplate)
+	split := strings.Split(checkTemplate, "\n")
+
+	chk := Check{Check: true, Clientset: clientset.CoreV1()}
+
+	for _, t := range split {
+		fmt.Printf("%s\n", t)
+		tmpl, err := template.New("testgen").Parse(t)
+		if err != nil {
+			panic(err)
+		}
+		err = tmpl.Execute(os.Stdout, &chk)
+	}
 	//display(rchck, "")
 	/*
 			m, err := json.Marshal(rchck)

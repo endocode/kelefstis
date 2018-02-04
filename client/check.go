@@ -16,6 +16,8 @@ import (
 type Check struct {
 	Check     bool
 	Clientset clientv1.CoreV1Interface
+	nodeList  *apiv1.NodeList
+	podList   *apiv1.PodList
 }
 
 func init() {
@@ -45,7 +47,14 @@ func (t *Check) MatchString(r string, s string) *Check {
 
 //Nodes returns the Nodes().List()  forwarded from the Clientset
 func (t *Check) Nodes() (*apiv1.NodeList, error) {
-	return t.Clientset.Nodes().List(metav1.ListOptions{})
+	if t.nodeList == nil {
+		nodeList, err := t.Clientset.Nodes().List(metav1.ListOptions{})
+		if err == nil {
+			t.nodeList = nodeList
+		}
+		return nodeList, err
+	}
+	return t.nodeList, nil
 }
 
 //NumberOfNodes  returns the number of nodes in the cluster
@@ -68,5 +77,12 @@ func (t *Check) NumberOfPods(namespace string) (int, error) {
 '' means the default namespace
 */
 func (t *Check) Pods(namespace string) (*apiv1.PodList, error) {
-	return t.Clientset.Pods(namespace).List(metav1.ListOptions{})
+	if t.podList == nil {
+		podList, err := t.Clientset.Pods(namespace).List(metav1.ListOptions{})
+		if err == nil {
+			t.podList = podList
+		}
+		return podList, err
+	}
+	return t.podList, nil
 }

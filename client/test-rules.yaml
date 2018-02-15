@@ -14,7 +14,7 @@ spec:
             containers:
               $range: "all"
               image:
-                $matches: "asadasd"
+                $matchString: "^(gcr.io/(google[-_]containers|k8s-minikube)|k8s.gcr.io)"
     # - cluster:
     #     min: 3
     #     max: 10

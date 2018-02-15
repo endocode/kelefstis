@@ -36,7 +36,7 @@ type RuleChecker struct {
 					Containers struct {
 						Range string `json:"$range"`
 						Image struct {
-							Matches string `json:"$matches"`
+							MatchString string `json:"$matchString"`
 						} `json:"image"`
 					} `json:"containers"`
 				} `json:"spec"`

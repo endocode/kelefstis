@@ -14,8 +14,7 @@ spec:
             containers:
               $range: "all"
               image:
-                $range:
-                  $matches: "asadasd"
+                $matches: "asadasd"
     # - cluster:
     #     min: 3
     #     max: 10

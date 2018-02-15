@@ -204,7 +204,7 @@ func printValue(buf io.Writer, prefix string, path []string, v reflect.Value) {
 		fmt.Printf("%s String: %q\n", prefix, v)
 		pathString := strings.Join(path[:len(path)-1], ".")
 		//fmt.Fprintf(buf, ".%s %q: {{.%s %q}}", pathString, v, pathString, v)
-		fmt.Fprintf(buf, "path= .%s {{.Image}}\n ", pathString)
+		fmt.Fprintf(buf, "path= .%s %q {{$.Matches \"\" .%s}}\n ", pathString, v, pathString)
 	default:
 		{
 			if v.CanInterface() {

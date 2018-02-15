@@ -6,17 +6,20 @@ metadata:
   clusterName: "my cluster"
 spec:
   rules:
-  -  pods:
-        namespace:
-          $eq: "default"
-        spec:
-          containers:
-            image:
-              matches:
-                $matches: "asadasd"
-  - cluster:
-      min: 3
-      max: 10
-  - nodes:
-      memory:
-        min: 100GB
+    -  pods:
+          $range: "all"
+          namespace:
+            $eq: "lirumlarum"
+          spec:
+            containers:
+              $range: "all"
+              image:
+                $range:
+                  $matches: "asadasd"
+    # - cluster:
+    #     min: 3
+    #     max: 10
+    # # - nodes:
+    #     $range: "all"
+    #     memory:
+    #       min: 100GB

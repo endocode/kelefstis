@@ -6,10 +6,12 @@ metadata:
 spec:
   rules:
     -  pods:
+          $range: "all"
           namespace:
             $eq: "lirumlarum"
           spec:
             containers:
+              $range: "all"
               image:
                 $matches: "asadasd"
     - cluster:

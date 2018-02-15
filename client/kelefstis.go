@@ -144,34 +144,7 @@ func listResource(clientset *kubernetes.Clientset) {
 	*/
 }
 
-func display(s interface{}, t string) {
-
-	reflectType := reflect.TypeOf(s).Elem()
-	reflectValue := reflect.ValueOf(s).Elem()
-
-	fmt.Printf("%s#ReflectType=%s NumField=%d\n", t, reflectType, reflectType.NumField())
-
-	for i := 0; i < reflectType.NumField(); i++ {
-		typeName := reflectType.Field(i).Name
-
-		valueType := reflectValue.Field(i).Type()
-		valueValue := reflectValue.Field(i)
-		switch reflectValue.Field(i).Kind() {
-		case reflect.String, reflect.Int32:
-			fmt.Printf("%s%s : %s(%s)\n", t, typeName, valueValue, valueType)
-		case reflect.Array:
-			fmt.Printf("%sArray: %s : %s(%s)\n", t, typeName, valueValue, valueType)
-		case reflect.Struct:
-			fmt.Printf("%s%s : %s\n", t, typeName, valueType)
-			display(&valueValue, "\t\t")
-		default:
-			fmt.Printf("Default: %s%s : %s(%s)\n", t, typeName, valueValue, valueType)
-		}
-
-	}
-}
-
-func printValue(buf io.Writer, prefix string, path string, template string, v reflect.Value) {
+func printValue(buf io.Writer, prefix string, path []string, v reflect.Value) {
 	fmt.Printf("%s%s ", prefix, path)
 	// Drill down through pointers and interfaces to get a value we can print.
 	for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
@@ -188,24 +161,39 @@ func printValue(buf io.Writer, prefix string, path string, template string, v re
 	case reflect.Slice, reflect.Array:
 		fmt.Printf("Array %d elements\n", v.Len())
 		for i := 0; i < v.Len(); i++ {
-			fmt.Printf("%s%d: ", prefix, i)
-			indexedTemplate := fmt.Sprintf("index (%s %d)", template, i)
-			printValue(buf, prefix+"\t", fmt.Sprintf("%s[%d]", path, i), indexedTemplate, v.Index(i))
+			//			fmt.Printf("%s%d: ", prefix, i)
+			index := append([]string{"index"}, path...)
+			printValue(buf, prefix+"\t", append(index, fmt.Sprintf("%d", i)), v.Index(i))
 		}
 	case reflect.Struct:
 		t := v.Type()
 		// use type to get number and names of fields
 		fmt.Printf("(Struct with %d fields)\n", t.NumField())
 
+		rangeFlag := false
 		for i := 0; i < t.NumField(); i++ {
 			if !t.Field(i).Anonymous {
-				fmt.Printf("%s%s: ", prefix, t.Field(i).Name)
-				fieldName := "." + t.Field(i).Name
-				printValue(buf, prefix+"\t", path+fieldName, template+fieldName, v.Field(i))
+				if t.Field(i).Name == "Range" {
+					args := ""
+					if len(path) == 1 && path[0] == "Pods" {
+						args = "\"\""
+					}
+					fmt.Fprintf(buf, "{{ range .%s %s}}\n", strings.Join(path, "."), args)
+					//	fmt.Fprintf(buf, "%s", "{ {printf \"%-24s\" .Image} }")
+					rangeFlag = true
+					path = nil
+				} else {
+					fmt.Printf("%s%s: ", prefix, t.Field(i).Name)
+					fieldName := t.Field(i).Name
+					printValue(buf, prefix+"\t", append(path, fieldName), v.Field(i))
+				}
 			}
 			if v.Type() == reflect.TypeOf(Time{}) {
 				fmt.Printf("%s%s: %s\n", prefix, t.Field(i).Name, v.Interface())
 			}
+		}
+		if rangeFlag {
+			fmt.Fprintf(buf, "{{end}}\n")
 		}
 	case reflect.Invalid:
 		fmt.Printf("Invalid!\n")
@@ -214,7 +202,9 @@ func printValue(buf io.Writer, prefix string, path string, template string, v re
 		//{{ (%s", prefix, path)
 		//fmt.Fprintf(buf, ") 0}}")
 		fmt.Printf("%s String: %q\n", prefix, v)
-		fmt.Printf("%s Template: (%s %s)\n", prefix, template, v.String())
+		pathString := strings.Join(path[:len(path)-1], ".")
+		//fmt.Fprintf(buf, ".%s %q: {{.%s %q}}", pathString, v, pathString, v)
+		fmt.Fprintf(buf, "path= .%s {{.Image}}\n ", pathString)
 	default:
 		{
 			if v.CanInterface() {
@@ -250,36 +240,23 @@ func ListCRD(clientset *kubernetes.Clientset, group string, version string, crd 
 	if err != nil {
 		return err
 	}
-	bufWriter := bytes.NewBufferString("")
-	printValue(bufWriter, "", "", "", reflect.ValueOf(rchck))
-	checkTemplate := string(bufWriter.Bytes())
+	bufWriter := bytes.NewBufferString("NumberOfPods={{.NumberOfPods \"\"}}\n")
 
-	//fmt.Printf(">>>%s<<<\n", checkTemplate)
-	split := strings.Split(checkTemplate, "\n")
+	for _, r := range rchck.Spec.Rules {
+		printValue(bufWriter, "", nil, reflect.ValueOf(r))
+	}
+
+	checkTemplate := string(bufWriter.Bytes())
 
 	chk := Check{Check: true, Clientset: clientset.CoreV1()}
 
-	for _, t := range split {
-		fmt.Printf("%s\n", t)
-		tmpl, err := template.New("testgen").Parse(t)
-		if err != nil {
-			panic(err)
-		}
-		err = tmpl.Execute(os.Stdout, &chk)
+	fmt.Printf("%s\n", checkTemplate)
+
+	tmpl, err := template.New("testgen").Parse(checkTemplate)
+	if err != nil {
+		panic(err)
 	}
-	//display(rchck, "")
-	/*
-			m, err := json.Marshal(rchck)
+	err = tmpl.Execute(os.Stdout, &chk)
 
-			fmt.Printf("%24s",m)
-			fmt.Printf("\n\n%s\n\n", prettyJSON)
-
-			if err!=nil {
-				panic(err.Error())
-			}
-
-		y, _ := yaml.JSONToYAML(raw)
-		fmt.Printf("\n\n%s", y)
-	*/
-	return nil
+	return err
 }

@@ -46,22 +46,22 @@ func (t *Check) MatchString(r string, s string) *Check {
 }
 
 //Nodes returns the Nodes().List()  forwarded from the Clientset
-func (t *Check) Nodes() (*apiv1.NodeList, error) {
+func (t *Check) Nodes() ([]apiv1.Node, error) {
 	if t.nodeList == nil {
 		nodeList, err := t.Clientset.Nodes().List(metav1.ListOptions{})
 		if err == nil {
 			t.nodeList = nodeList
 		}
-		return nodeList, err
+		return nodeList.Items, err
 	}
-	return t.nodeList, nil
+	return t.nodeList.Items, nil
 }
 
 //NumberOfNodes  returns the number of nodes in the cluster
 func (t *Check) NumberOfNodes() (int, error) {
 	list, err := t.Nodes()
 
-	return len(list.Items), err
+	return len(list), err
 }
 
 /*NumberOfPods returns the number of pods in the namespace
@@ -70,19 +70,19 @@ func (t *Check) NumberOfNodes() (int, error) {
 func (t *Check) NumberOfPods(namespace string) (int, error) {
 	list, err := t.Pods(namespace)
 
-	return len(list.Items), err
+	return len(list), err
 }
 
 /*Pods returns the Pods().List()  forwarded from the Clientset in the namespace
 '' means the default namespace
 */
-func (t *Check) Pods(namespace string) (*apiv1.PodList, error) {
+func (t *Check) Pods(namespace string) ([]apiv1.Pod, error) {
 	if t.podList == nil {
 		podList, err := t.Clientset.Pods(namespace).List(metav1.ListOptions{})
 		if err == nil {
 			t.podList = podList
 		}
-		return podList, err
+		return podList.Items, err
 	}
-	return t.podList, nil
+	return t.podList.Items, nil
 }

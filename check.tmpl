@@ -1,14 +1,20 @@
+{{ range .Pods ""}}
+{{ range .Spec.Containers }}
+{{.Image}}
+ {{end}}
+{{end}}
+
 we found {{.NumberOfNodes}} nodes={{(.NotZero (.NumberOfNodes) ).Check}}
 we found {{.NumberOfPods ""}} pods
-{{- range (.Pods "").Items}}
+{{- range (.Pods "")}}
 Pod {{printf "%-36s" .GetName}} {{printf "%-24s %-24s" .Status.Phase .Namespace }}
 {{.ClusterName}}
 {{- range .Spec.Containers}}
     Container {{printf "%-24s" .Name -}}
     {{ printf "%-24s" .Image -}}
-    {{ printf " (%t) " ($.MatchString "^gcr.io/(google[-_]containers|k8s-minikube)" .Image).Check}}
+    {{ printf " (%t) " ($.MatchString "^(gcr.io/(google[-_]containers|k8s-minikube)|k8s.gcr.io)" .Image).Check}}
     {{- .SecurityContext}}
 {{- end}}
 {{- end}}
-{{(index (index (.Pods "").Items 0).Spec.Containers 0 ).Image}}
+{{(index (index (.Pods "") 0).Spec.Containers 0 ).Image}}
 Result: Compliance {{.Check}}

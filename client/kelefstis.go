@@ -6,11 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
-	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/docopt/docopt-go"
 	apiv1 "k8s.io/api/core/v1"
@@ -144,84 +142,6 @@ func listResource(clientset *kubernetes.Clientset) {
 	*/
 }
 
-func printValue(buf io.Writer, prefix string, path []string, v reflect.Value) {
-	fmt.Printf("%s%s ", prefix, path)
-	// Drill down through pointers and interfaces to get a value we can print.
-	for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
-		if v.Kind() == reflect.Ptr {
-			// Check for recursive data
-			if !v.CanInterface() {
-				return
-			}
-
-		}
-		v = v.Elem()
-	}
-	switch v.Kind() {
-	case reflect.Slice, reflect.Array:
-		fmt.Printf("Array %d elements\n", v.Len())
-		for i := 0; i < v.Len(); i++ {
-			//			fmt.Printf("%s%d: ", prefix, i)
-			index := append([]string{"index"}, path...)
-			printValue(buf, prefix+"\t", append(index, fmt.Sprintf("%d", i)), v.Index(i))
-		}
-	case reflect.Struct:
-		t := v.Type()
-		// use type to get number and names of fields
-		fmt.Printf("(Struct with %d fields)\n", t.NumField())
-		rangeFlag := false
-		for i := 0; i < t.NumField(); i++ {
-			if !t.Field(i).Anonymous {
-				if t.Field(i).Name == "Range" {
-					sf, found := t.FieldByName("Namespace")
-					nameSpace := ""
-					if found {
-						nameSpace = "\"" + v.Field(sf.Index[0]).String() + "\""
-					}
-					fmt.Fprintf(buf, "{{ range .%s %s}}\n", strings.Join(path, "."), nameSpace)
-					//	fmt.Fprintf(buf, "%s", "{ {printf \"%-24s\" .Image} }")
-					rangeFlag = true
-					path = nil
-				} else {
-					fmt.Printf("%s%s: ", prefix, t.Field(i).Name)
-					fieldName := t.Field(i).Name
-					printValue(buf, prefix+"\t", append(path, fieldName), v.Field(i))
-				}
-			}
-			if v.Type() == reflect.TypeOf(Time{}) {
-				fmt.Printf("%s%s: %s\n", prefix, t.Field(i).Name, v.Interface())
-			}
-		}
-		if rangeFlag {
-			fmt.Fprintf(buf, "{{end}}\n")
-		}
-	case reflect.Invalid:
-		fmt.Printf("Invalid!\n")
-	case reflect.String:
-		//fmt.Fprintf(buf, "%s{{$.MatchString \"heapster\" (index (index ($.Pods \"\").Items 0).Spec.Containers 0).Image}}\n", path)
-		//{{ (%s", prefix, path)
-		//fmt.Fprintf(buf, ") 0}}")
-		fmt.Printf("%s String: %q\n", prefix, v)
-		pathString := strings.Join(path[:len(path)-1], ".")
-		fs := path[len(path)-1]
-		chk := Check{}
-		fmt.Fprintf(buf, "(%s %q .%s).Check=", fs, v, pathString)
-		if chk.HasMethod(fs) {
-			fmt.Fprintf(buf, "{{($.%s %q .%s).Check}}\n ", fs, v, pathString)
-		} else {
-			fmt.Fprintf(buf, "does not exist\n")
-		}
-	default:
-		{
-			if v.CanInterface() {
-				fmt.Printf("Default Interface: %v\n", v.Interface())
-			} else {
-				fmt.Printf("Default: %s\n", v.Type())
-			}
-		}
-	}
-}
-
 //ListCRD is to check by a raw template. To be removed
 func ListCRD(clientset *kubernetes.Clientset, group string, version string, crd string, resource string) error {
 	rules := clientset.
@@ -247,13 +167,13 @@ func ListCRD(clientset *kubernetes.Clientset, group string, version string, crd 
 	}
 	bufWriter := bytes.NewBufferString("NumberOfPods={{.NumberOfPods \"\"}}\n")
 
+	chk := Check{Check: true, Clientset: clientset.CoreV1()}
+
 	for _, r := range rchck.Spec.Rules {
-		printValue(bufWriter, "", nil, reflect.ValueOf(r))
+		chk.PrintTemplate(bufWriter, "", nil, reflect.ValueOf(r))
 	}
 
 	checkTemplate := string(bufWriter.Bytes())
-
-	chk := Check{Check: true, Clientset: clientset.CoreV1()}
 
 	fmt.Printf("%s\n", checkTemplate)
 

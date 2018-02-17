@@ -169,16 +169,16 @@ func printValue(buf io.Writer, prefix string, path []string, v reflect.Value) {
 		t := v.Type()
 		// use type to get number and names of fields
 		fmt.Printf("(Struct with %d fields)\n", t.NumField())
-
 		rangeFlag := false
 		for i := 0; i < t.NumField(); i++ {
 			if !t.Field(i).Anonymous {
 				if t.Field(i).Name == "Range" {
-					args := ""
-					if len(path) == 1 && path[0] == "Pods" {
-						args = "\"\""
+					sf, found := t.FieldByName("Namespace")
+					nameSpace := ""
+					if found {
+						nameSpace = "\"" + v.Field(sf.Index[0]).String() + "\""
 					}
-					fmt.Fprintf(buf, "{{ range .%s %s}}\n", strings.Join(path, "."), args)
+					fmt.Fprintf(buf, "{{ range .%s %s}}\n", strings.Join(path, "."), nameSpace)
 					//	fmt.Fprintf(buf, "%s", "{ {printf \"%-24s\" .Image} }")
 					rangeFlag = true
 					path = nil
@@ -203,8 +203,14 @@ func printValue(buf io.Writer, prefix string, path []string, v reflect.Value) {
 		//fmt.Fprintf(buf, ") 0}}")
 		fmt.Printf("%s String: %q\n", prefix, v)
 		pathString := strings.Join(path[:len(path)-1], ".")
-		//fmt.Fprintf(buf, ".%s %q: {{.%s %q}}", pathString, v, pathString, v)
-		fmt.Fprintf(buf, "path= .%s %q {{($.MatchString %q .%s).Check}}\n ", pathString, v, v, pathString)
+		fs := path[len(path)-1]
+		chk := Check{}
+		fmt.Fprintf(buf, "(%s %q .%s).Check=", fs, v, pathString)
+		if chk.HasMethod(fs) {
+			fmt.Fprintf(buf, "{{($.%s %q .%s).Check}}\n ", fs, v, pathString)
+		} else {
+			fmt.Fprintf(buf, "does not exist\n")
+		}
 	default:
 		{
 			if v.CanInterface() {
@@ -225,8 +231,6 @@ func ListCRD(clientset *kubernetes.Clientset, group string, version string, crd 
 		AbsPath("apis", group, version, crd, resource).
 		Do()
 
-	var rchck RuleChecker
-
 	raw, err := rules.Raw()
 	if err != nil {
 		return err
@@ -234,6 +238,7 @@ func ListCRD(clientset *kubernetes.Clientset, group string, version string, crd 
 	var prettyJSON bytes.Buffer
 	err = json.Indent(&prettyJSON, raw, "", "\t")
 	//	fmt.Printf("\n-------------\n%s\n----------\n", prettyJSON.String())
+	rchck := RuleChecker{}
 
 	json.Unmarshal(raw, &rchck)
 	//	display(&rchck,"")

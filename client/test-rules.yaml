@@ -7,14 +7,11 @@ metadata:
 spec:
   rules:
     -  pods:
-          $range: "all"
-          namespace:
-            $eq: "lirumlarum"
-          spec:
-            containers:
-              $range: "all"
-              image:
-                $matchString: "^(gcr.io/(google[-_]containers|k8s-minikube)|k8s.gcr.io)"
+#        namespace: "default"
+        spec:
+           containers:
+             image:
+               matchString: "^(gcr.io/(google[-_]containers|k8s-minikube)|k8s.gcr.io)"
     # - cluster:
     #     min: 3
     #     max: 10

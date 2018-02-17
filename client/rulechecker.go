@@ -28,29 +28,27 @@ type RuleChecker struct {
 	Spec struct {
 		Rules []struct {
 			Pods struct {
-				Range string `json:"$range"`
-				// Namespace struct {
-				// 	Eq string `json:"$eq"`
-				// } `json:"namespace"`
-				Spec struct {
+				Range     string `json:"$range,default \"all\""`
+				Namespace string `json:"namespace, default \"adadasd\""`
+				Spec      struct {
 					Containers struct {
-						Range string `json:"$range"`
+						Range string `json:"$range, default all"`
 						Image struct {
-							MatchString string `json:"$matchString"`
+							MatchString string `json:"matchString"`
 						} `json:"image"`
 					} `json:"containers"`
 				} `json:"spec"`
 			} `json:"pods,omitempty"`
-			Cluster struct {
-				Max int `json:"max"`
-				Min int `json:"min"`
+			Cluster *struct {
+				Max int `json:"max, default 1"`
+				Min int `json:"min, default 1"`
 			} `json:"cluster,omitempty"`
-			// Nodes struct {
-			// 	Range  string `json:"$range"`
-			// 	Memory struct {
-			// 		Min string `json:"min"`
-			// 	} `json:"memory"`
-			// } `json:"nodes,omitempty"`
+			Nodes *struct {
+				Range  string `json:"$range"`
+				Memory struct {
+					Min string `json:"min"`
+				} `json:"memory"`
+			} `json:"nodes,omitempty"`
 		} `json:"rules"`
 	} `json:"spec"`
 }

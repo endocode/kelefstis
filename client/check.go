@@ -3,6 +3,7 @@ package client
 import (
 	"log"
 	"os"
+	"reflect"
 	"regexp"
 
 	apiv1 "k8s.io/api/core/v1"
@@ -85,4 +86,11 @@ func (t *Check) Pods(namespace string) ([]apiv1.Pod, error) {
 		return podList.Items, err
 	}
 	return t.podList.Items, nil
+}
+
+//HasMethod checks if the method has been implemented
+func (t *Check) HasMethod(method string) bool {
+	st := reflect.TypeOf(t)
+	_, ok := st.MethodByName(method)
+	return ok
 }

@@ -32,19 +32,24 @@ type RuleChecker struct {
 				Namespace string `json:"namespace, default \"adadasd\""`
 				Spec      struct {
 					Containers struct {
-						Range string `json:"$range, default all"`
+						Range string `json:"range, default all"`
 						Image struct {
 							MatchString string `json:"matchString"`
 						} `json:"image"`
 					} `json:"containers"`
-				} `json:"spec"`
+				} `json:"spec,omitempty"`
+				Status struct {
+					Phase struct {
+						Eq string `json:"eq"`
+					} `json:"phase"`
+				} `json:"status"`
 			} `json:"pods,omitempty"`
 			Cluster *struct {
 				Max int `json:"max, default 1"`
 				Min int `json:"min, default 1"`
 			} `json:"cluster,omitempty"`
 			Nodes *struct {
-				Range  string `json:"$range"`
+				Range  string `json:"range"`
 				Memory struct {
 					Min string `json:"min"`
 				} `json:"memory"`

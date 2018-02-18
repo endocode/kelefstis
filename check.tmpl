@@ -12,9 +12,11 @@ Pod {{printf "%-36s" .GetName}} {{printf "%-24s %-24s" .Status.Phase .Namespace 
 {{- range .Spec.Containers}}
     Container {{printf "%-24s" .Name -}}
     {{ printf "%-24s" .Image -}}
-    {{ printf " (%t) " ($.MatchString "^(gcr.io/(google[-_]containers|k8s-minikube)|k8s.gcr.io)" .Image).Check}}
+    {{ ($.MatchString "^(gcr.io/(google[-_]containers|k8s-minikube)|k8s.gcr.io)" .Image).Check}}
     {{- .SecurityContext}}
 {{- end}}
+.Status.Phase={{printf "%T %q\n" .Status.Phase .Status.Phase}}
+(Eq "Running" .Status.Phase).Check={{ ($.Eq "Running" (printf "%s" .Status.Phase)).Check }}
 {{- end}}
 {{(index (index (.Pods "") 0).Spec.Containers 0 ).Image}}
 Result: Compliance {{.Check}}

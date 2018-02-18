@@ -49,6 +49,21 @@ func (chk *Check) MatchString(r string, s string) *Check {
 	return chk
 }
 
+//ToString uses fmt.Sprintf to convert anything to a string
+func (*Check) ToString(i interface{}) string {
+	return fmt.Sprintf("%s", i)
+}
+
+//Eq checks, if the string s is equal to r
+func (chk *Check) Eq(r string, s string) *Check {
+
+	eq := (r == s)
+	log.Printf("\nEq: %q %q %t\n", r, s, eq)
+
+	chk.Check = chk.Check && eq
+	return chk
+}
+
 //Nodes returns the Nodes().List()  forwarded from the Clientset
 func (chk *Check) Nodes() ([]apiv1.Node, error) {
 	if chk.nodeList == nil {
@@ -161,9 +176,12 @@ func (chk *Check) PrintTemplate(buf io.Writer, prefix string, path []string, v r
 		fs := path[len(path)-1]
 		fmt.Fprintf(buf, "(%s %q .%s).Check=", fs, v, pathString)
 		if chk.HasMethod(fs) {
-			fmt.Fprintf(buf, "{{($.%s %q .%s).Check}}\n ", fs, v, pathString)
+			// to convert any argument to a string the printf "%s" is used
+			// which returns a string. This seems to be more reliable than
+			// s, ok := i.(string) conversion. Weird, but works
+			fmt.Fprintf(buf, "{{($.%s %q (printf \"%%s\" .%s)).Check}}\n ", fs, v, pathString)
 		} else {
-			fmt.Fprintf(buf, "does not exist\n")
+			fmt.Fprintf(buf, "method %q does not exist\n", fs)
 		}
 	default:
 		{

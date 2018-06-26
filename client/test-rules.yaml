@@ -7,7 +7,7 @@ metadata:
 spec:
   rules:
     -  pods:
-#        namespace: "default"
+        namespace: "kube-system"
         spec:
            containers:
              image:

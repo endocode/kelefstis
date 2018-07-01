@@ -19,7 +19,7 @@ before_script:
 # list the installed addons
 - minikube addons list
 # Wait for all pods in Kubernetes to be up and ready.
-- let PODS=0; until [[ 18 -le $PODS ]]; do PODS=$(kubectl get pods --all-namespaces -o jsonpath-file=.travis-jsonpath | wc -l); echo waiting... $PODS pods ; sleep 5; done
+- let PODS=0; until [[ 3 -le $PODS ]]; do PODS=$(kubectl get pods --all-namespaces -o jsonpath-file=.travis-jsonpath | wc -l); echo waiting... $PODS pods ; sleep 5; done
 language: go
 
 go:

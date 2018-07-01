@@ -1,14 +1,11 @@
 package main
 
 import (
-	"flag"
-	"os"
-	"path/filepath"
+	"errors"
 
 	"github.com/endocode/goju"
 	"github.com/golang/glog"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 func toStringMap(i interface{}) (map[string]interface{}, bool) {
@@ -23,42 +20,55 @@ func toArray(i interface{}) ([]interface{}, bool) {
 // simple k8s client that lists all available pods
 // it gets config from $HOME/.kube/config
 func main() {
-	var rulechecker string
-	kubeconfig := filepath.Join(os.Getenv("HOME"), ".kube", "config")
-
-	flag.StringVar(&rulechecker, "rulechecker", "", "check rules")
-	flag.StringVar(&kubeconfig, "kubeconfig", kubeconfig, "the place of the kubeconfig")
-	flag.Set("logtostderr", "true")
-	flag.Set("v", "1")
-	flag.Parse()
-	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	initFlags()
+	rulemap, err := rules(clientset, "apis", "stable.example.com", "v1", "rulecheckers", "rules")
 	if err != nil {
-		panic(err.Error())
+		panic(err)
 	}
+	for k, v := range rulemap {
 
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
+		glog.V(2).Infof("\nusing rule for %s:\n%s\n", k, v)
+
+		_, err := rules(clientset, "api", "", "v1", k, "")
+		if err != nil {
+			glog.V(1).Infof("error %s", err)
+		}
+		var treecheck = goju.TreeCheck{}
+
+		treecheck.Traverse(nil, rulemap)
 	}
+}
 
+func rules(clientset *kubernetes.Clientset, path string, group string,
+	version string, crd string, resource string) (map[string]interface{}, error) {
 	//	listPods(clientset)
 	//	listResource(clientset)
-	tree, err := ListCRD(clientset, "stable.example.com", "v1", "rulecheckers", "rules")
+	tree, err := ListCRD(clientset, path, group, version, crd, resource)
+	if err != nil {
+		return nil, err
+	}
 	glog.V(1).Infof("\nTree:\n%s\n", tree)
 
-	t, _ := toStringMap(tree)
+	t, ok := toStringMap(tree)
+	if !ok {
+		return nil, errors.New("could not convert tree to stringmap")
+	}
 
-	spec, _ := toStringMap(t["spec"])
+	spec, ok := toStringMap(t["spec"])
+	if !ok {
+		return nil, errors.New("could not extract spec from map")
+	}
 	glog.V(2).Infof("\nSpec:\n%s\n", spec)
 
-	rules, _ := toArray(spec["rules"])
+	rules, ok := toArray(spec["rules"])
+	if !ok {
+		return nil, errors.New("could not extract rules from spec")
+	}
 	glog.V(2).Infof("\nRules:\n%s\n", rules[0])
 
-	rules0, _ := toStringMap(rules[0])
-	pods, _ := toStringMap(rules0["pods"])
-	glog.V(2).Infof("\nPods:\n%s\n", pods)
-
-	var treecheck = goju.TreeCheck{}
-
-	treecheck.Traverse(nil, nil)
+	rules0, ok := toStringMap(rules[0])
+	if !ok {
+		return nil, errors.New("could not extract rules[0]")
+	}
+	return rules0, nil
 }

@@ -10,7 +10,7 @@ before_script:
 # Download minikube.
 - curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 
 - chmod +x minikube kubectl && sudo mv minikube kubectl /usr/local/bin/
-- mv /etc/init.d/kubelet  /etc/systemd/system
+- sudo mv /etc/init.d/kubelet  /etc/systemd/system
 - sudo minikube start --vm-driver=none 
 # Fix the kubectl context, as it's often stale.
 - minikube update-context

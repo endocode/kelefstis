@@ -49,7 +49,7 @@ func deleteRulechecker() error {
 
 // TestRules just looks up one object
 func TestRules(t *testing.T) {
-	tree, err := rules(clientset, "apis", "stable.example.com", "v1", "testrulecheckers", "")
+	tree, err := CRD(clientset, "apis", "stable.example.com", "v1", "testrulecheckers", "", "rules")
 	assert.NotNil(t, tree)
 	assert.Nil(t, err)
 
@@ -63,7 +63,7 @@ func TestRules(t *testing.T) {
 
 // TestRules just looks up one object
 func TestPods(t *testing.T) {
-	tree, err := items(clientset, "api", "", "v1", "pods", "")
+	tree, err := Items(clientset, "api", "", "v1", "pods", "")
 	assert.NotNil(t, tree)
 	assert.Nil(t, err)
 

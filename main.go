@@ -21,7 +21,7 @@ func toArray(i interface{}) ([]interface{}, bool) {
 // it gets config from $HOME/.kube/config
 func main() {
 	initFlags()
-	rulemap, err := rules(clientset, "apis", "stable.example.com", "v1", "rulecheckers", "rules")
+	rulemap, err := rules(clientset, "apis", "stable.example.com", "v1", "rulecheckers", "")
 	if err != nil {
 		panic(err)
 	}
@@ -39,10 +39,9 @@ func main() {
 	}
 }
 
-func rules(clientset *kubernetes.Clientset, path string, group string,
-	version string, crd string, resource string) (map[string]interface{}, error) {
-	//	listPods(clientset)
-	//	listResource(clientset)
+func items(clientset *kubernetes.Clientset, path string, group string,
+	version string, crd string, resource string) ([]interface{}, error) {
+
 	tree, err := ListCRD(clientset, path, group, version, crd, resource)
 	if err != nil {
 		return nil, err
@@ -54,7 +53,28 @@ func rules(clientset *kubernetes.Clientset, path string, group string,
 		return nil, errors.New("could not convert tree to stringmap")
 	}
 
-	spec, ok := toStringMap(t["spec"])
+	items, ok := toArray(t["items"])
+	if !ok {
+		return nil, errors.New("could not extract items from map")
+	}
+
+	return items, nil
+}
+
+func rules(clientset *kubernetes.Clientset, path string, group string,
+	version string, crd string, resource string) (map[string]interface{}, error) {
+
+	items, err := items(clientset, path, group, version, crd, resource)
+	if err != nil {
+		return nil, err
+	}
+
+	r, ok := toStringMap(items[0])
+	if !ok {
+		return nil, errors.New("could not extract items[0] from map")
+	}
+
+	spec, ok := toStringMap(r["spec"])
 	if !ok {
 		return nil, errors.New("could not extract spec from map")
 	}

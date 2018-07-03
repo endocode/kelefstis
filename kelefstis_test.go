@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"os"
 	"os/exec"
@@ -48,9 +49,30 @@ func deleteRulechecker() error {
 
 // TestRules just looks up one object
 func TestRules(t *testing.T) {
-	rules0, err := rules(clientset, "apis", "stable.example.com", "v1", "testrulecheckers", "test-rules")
-	assert.NotNil(t, rules0)
+	tree, err := rules(clientset, "apis", "stable.example.com", "v1", "testrulecheckers", "")
+	assert.NotNil(t, tree)
 	assert.Nil(t, err)
+
+	pods, ok := toStringMap(tree["pods"])
+	assert.NotNil(t, pods)
+	assert.True(t, ok)
+
+	raw, err := json.Marshal(pods)
+	LogJSON(2, raw)
+}
+
+// TestRules just looks up one object
+func TestPods(t *testing.T) {
+	tree, err := items(clientset, "api", "", "v1", "pods", "")
+	assert.NotNil(t, tree)
+	assert.Nil(t, err)
+
+	pods, ok := toStringMap(tree[0])
+	assert.NotNil(t, pods)
+	assert.True(t, ok)
+
+	raw, err := json.Marshal(pods)
+	LogJSON(2, raw)
 }
 
 var create, delete error

@@ -87,7 +87,6 @@ func listResource(clientset *kubernetes.Clientset) {
 func prettyJSON(raw []byte) (string, error) {
 	var buffer bytes.Buffer
 	err := json.Indent(&buffer, raw, "", "  ")
-
 	return buffer.String(), err
 }
 

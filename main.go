@@ -30,8 +30,10 @@ func main() {
 		if err != nil {
 			glog.V(1).Infof("error %s", err)
 		}
-		var treecheck = goju.TreeCheck{}
+		var treecheck = goju.TreeCheck{Check: &goju.Check{}}
 
 		treecheck.Traverse(items, rulemap)
+		glog.V(0).Infof("tests true: %d", treecheck.Check.ErrorHistory)
+		glog.V(0).Infof("tests true: %d", treecheck.Check.TrueCounter)
 	}
 }

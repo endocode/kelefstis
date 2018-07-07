@@ -7,6 +7,8 @@ import (
 	"os/exec"
 	"testing"
 
+	"github.com/endocode/goju"
+	"github.com/golang/glog"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -73,6 +75,48 @@ func TestPods(t *testing.T) {
 
 	raw, err := json.Marshal(pods)
 	LogJSON(2, raw)
+}
+
+func TestTraverse(t *testing.T) {
+	rulemap, err := CRD(clientset, "apis", "stable.example.com", "v1", "testrulecheckers", "", "rules")
+	assert.Nil(t, err)
+	assert.NotNil(t, rulemap)
+
+	items, err := Items(clientset, "api", "", "v1", "pods", "")
+	assert.Nil(t, err)
+
+	assert.NotNil(t, items)
+
+	pods, ok := toStringMap(items[0])
+	assert.NotNil(t, pods)
+	assert.True(t, ok)
+
+	var treecheck = goju.TreeCheck{Check: &goju.Check{}}
+
+	s, err := map2string(items[0])
+	assert.Nil(t, err)
+	assert.NotEqual(t, s, "")
+
+	podrule, ok := toStringMap(rulemap["pods"])
+	assert.NotNil(t, podrule)
+	assert.True(t, ok)
+
+	tr, err := map2string(podrule)
+	assert.Nil(t, err)
+	assert.NotEqual(t, tr, "")
+
+	glog.V(0).Infof("\nTree:%s\n#################################\nRules%s", s, tr)
+
+	treecheck.Traverse(items[0], podrule)
+
+	for i := treecheck.Check.ErrorHistory.Front(); i != nil; i = i.Next() {
+		glog.V(0).Infof("error %s", i)
+	}
+	assert.True(t, treecheck.Check.TrueCounter > 0)
+	glog.V(0).Infof("tests errors/true/false: %d/%d/%d",
+		treecheck.Check.ErrorHistory.Len(),
+		treecheck.Check.TrueCounter, treecheck.Check.FalseCounter)
+
 }
 
 var create, delete error

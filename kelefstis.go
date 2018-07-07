@@ -85,6 +85,16 @@ func listResource(clientset *kubernetes.Clientset) {
 
 	fmt.Printf(s)
 }
+
+func map2string(i interface{}) (string, error) {
+	b, err := json.Marshal(i)
+	if err != nil {
+		return "", err
+	}
+
+	return prettyJSON(b)
+}
+
 func prettyJSON(raw []byte) (string, error) {
 	var buffer bytes.Buffer
 	err := json.Indent(&buffer, raw, "", "  ")
@@ -138,7 +148,7 @@ func Items(clientset *kubernetes.Clientset, path string, group string,
 	if err != nil {
 		return nil, err
 	}
-	glog.V(1).Infof("\nTree:\n%s\n", tree)
+	glog.V(8).Infof("\nTree:\n%s\n", tree)
 
 	t, ok := toStringMap(tree)
 	if !ok {
@@ -171,13 +181,13 @@ func CRD(clientset *kubernetes.Clientset, path string, group string,
 	if !ok {
 		return nil, errors.New("could not extract spec from map")
 	}
-	glog.V(2).Infof("\nSpec:\n%s\n", spec)
+	glog.V(8).Infof("\nSpec:\n%s\n", spec)
 
 	rules, ok := toArray(spec[key])
 	if !ok {
 		return nil, errors.New("could not extract rules from spec")
 	}
-	glog.V(2).Infof("\nRules:\n%s\n", rules[0])
+	glog.V(8).Infof("\nRules:\n%s\n", rules[0])
 
 	rules0, ok := toStringMap(rules[0])
 	if !ok {

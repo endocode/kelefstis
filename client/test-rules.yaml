@@ -11,10 +11,10 @@ spec:
         spec:
            containers:
              image:
-               matchString: "^(gcr.io/(google[-_]containers|k8s-minikube)|k8s.gcr.io)"
+               matches: "^(gcr.io/(google[-_]containers|k8s-minikube)|k8s.gcr.io)"
         status:
           phase: 
-            eq: "Running"
+            equals: "Running"
     # - cluster:
     #     min: 3
     #     max: 10

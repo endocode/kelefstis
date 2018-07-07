@@ -105,9 +105,9 @@ func TestTraverse(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotEqual(t, tr, "")
 
-	glog.V(0).Infof("\nTree:%s\n#################################\nRules%s", s, tr)
+	glog.V(6).Infof("\nTree:%s\n#################################\nRules%s", s, tr)
 
-	treecheck.Traverse(items[0], podrule)
+	treecheck.Traverse(items, podrule)
 
 	for i := treecheck.Check.ErrorHistory.Front(); i != nil; i = i.Next() {
 		glog.V(0).Infof("error %s", i)

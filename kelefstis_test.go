@@ -84,38 +84,34 @@ func TestTraverse(t *testing.T) {
 
 	items, err := Items(clientset, "api", "", "v1", "pods", "")
 	assert.Nil(t, err)
-
 	assert.NotNil(t, items)
-
-	pods, ok := toStringMap(items[0])
-	assert.NotNil(t, pods)
-	assert.True(t, ok)
-
-	var treecheck = goju.TreeCheck{Check: &goju.Check{}}
-
-	s, err := map2string(items[0])
-	assert.Nil(t, err)
-	assert.NotEqual(t, s, "")
 
 	podrule, ok := toStringMap(rulemap["pods"])
 	assert.NotNil(t, podrule)
 	assert.True(t, ok)
 
-	tr, err := map2string(podrule)
-	assert.Nil(t, err)
-	assert.NotEqual(t, tr, "")
+	if glog.V(6) {
+		tr, err := map2string(podrule)
+		assert.Nil(t, err)
+		assert.NotEqual(t, tr, "")
 
-	glog.V(6).Infof("\nTree:%s\n#################################\nRules%s", s, tr)
+		s, err := map2string(items[0])
+		assert.Nil(t, err)
+		assert.NotEqual(t, s, "")
+
+		glog.V(6).Infof("\nTree:%s\n#################################\nRules%s", s, tr)
+	}
+	var treecheck = goju.TreeCheck{Check: &goju.Check{}}
 
 	treecheck.Traverse(items, podrule)
 
-	for i := treecheck.Check.ErrorHistory.Front(); i != nil; i = i.Next() {
+	for i := treecheck.ErrorHistory.Front(); i != nil; i = i.Next() {
 		glog.V(0).Infof("error %s", i)
 	}
-	assert.True(t, treecheck.Check.TrueCounter > 0)
+	assert.True(t, treecheck.TrueCounter > 0)
 	glog.V(0).Infof("tests errors/true/false: %d/%d/%d",
-		treecheck.Check.ErrorHistory.Len(),
-		treecheck.Check.TrueCounter, treecheck.Check.FalseCounter)
+		treecheck.ErrorHistory.Len(),
+		treecheck.TrueCounter, treecheck.FalseCounter)
 
 }
 

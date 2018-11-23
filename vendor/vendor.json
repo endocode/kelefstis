@@ -1,0 +1,13 @@
+{
+	"comment": "",
+	"ignore": "",
+	"package": [
+		{
+			"checksumSHA1": "xO+H9RzW07p0sgx5pUt4bXYkngM=",
+			"path": "github.com/endocode/goju",
+			"revision": "a683237e37da30c9efcb4399d50bc634d42aa516",
+			"revisionTime": "2018-07-08T10:28:36Z"
+		}
+	],
+	"rootPath": "k8s.io/sample-controller"
+}

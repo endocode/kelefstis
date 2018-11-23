@@ -1,0 +1,24 @@
+apiVersion: samplecontroller.k8s.io/v1alpha1
+kind: RuleChecker
+metadata:
+  description: my cluster, my rules
+  generation: 1
+  name: rules
+  namespace: default
+spec:
+  rules:
+  - pods:
+      namespace:
+        eq: default
+      range: all
+      spec:
+        containers:
+          image:
+            matches: "gcr.io"
+          range: all
+  - cluster:
+      max: 10
+      min: 3
+  - nodes:
+      memory:
+        min: 100GB

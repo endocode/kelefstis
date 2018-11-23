@@ -1,0 +1,22 @@
+apiVersion: samplecontroller.k8s.io/v1alpha1
+kind: RuleChecker
+metadata:
+  name: rules
+  description: "my cluster, my rules"
+spec:
+  rules:
+    - pods:
+          range: "all"
+          namespace:
+            eq: "lirumlarum"
+          spec:
+            containers:
+              range: "all"
+              image:
+                matches: "k8s.gcr.io"
+    - cluster:
+        min: 3
+        max: 10
+    - nodes:
+        memory:
+          min: 100GB

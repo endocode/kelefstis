@@ -36,6 +36,5 @@ func main() {
 		glog.V(0).Infof("tests error: %d", treecheck.ErrorHistory.Len())
 		glog.V(0).Infof("tests true : %d", treecheck.TrueCounter)
 		glog.V(0).Infof("tests false: %d", treecheck.FalseCounter)
-
 	}
 }

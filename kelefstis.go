@@ -72,20 +72,6 @@ func listPods(clientset *kubernetes.Clientset) (*apiv1.PodList, error) {
 	return pods, err
 }
 
-func listResource(clientset *kubernetes.Clientset) {
-	raw, err := clientset.CoreV1().
-		RESTClient().Get().
-		Resource("").DoRaw()
-
-	if err != nil {
-		panic(err.Error())
-	}
-
-	s, err := prettyJSON(raw)
-
-	fmt.Printf(s)
-}
-
 func map2string(i interface{}) (string, error) {
 	b, err := json.Marshal(i)
 	if err != nil {

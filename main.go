@@ -63,7 +63,6 @@ func main() {
 	controller := NewController(kubeClient, exampleClient,
 		kubeInformerFactory.Apps().V1().Deployments(),
 		kubeInformerFactory.Core().V1().Pods(),
-		exampleInformerFactory.Samplecontroller().V1alpha1().Foos(),
 		exampleInformerFactory.Samplecontroller().V1alpha1().RuleCheckers())
 
 	go kubeInformerFactory.Start(stopCh)

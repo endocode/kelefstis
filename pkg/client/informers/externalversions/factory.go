@@ -29,7 +29,7 @@ import (
 	cache "k8s.io/client-go/tools/cache"
 	versioned "github.com/endocode/kelefstis/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/endocode/kelefstis/pkg/client/informers/externalversions/internalinterfaces"
-	samplecontroller "github.com/endocode/kelefstis/pkg/client/informers/externalversions/samplecontroller"
+	kelefstis "github.com/endocode/kelefstis/pkg/client/informers/externalversions/kelefstis"
 )
 
 // SharedInformerOption defines the functional option type for SharedInformerFactory.
@@ -172,9 +172,9 @@ type SharedInformerFactory interface {
 	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
-	Samplecontroller() samplecontroller.Interface
+	Samplecontroller() kelefstis.Interface
 }
 
-func (f *sharedInformerFactory) Samplecontroller() samplecontroller.Interface {
-	return samplecontroller.New(f, f.namespace, f.tweakListOptions)
+func (f *sharedInformerFactory) Samplecontroller() kelefstis.Interface {
+	return kelefstis.New(f, f.namespace, f.tweakListOptions)
 }

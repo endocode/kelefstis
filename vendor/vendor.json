@@ -9,5 +9,5 @@
 			"revisionTime": "2018-07-08T10:28:36Z"
 		}
 	],
-	"rootPath": "k8s.io/sample-controller"
+	"rootPath": "github.com/endocode/kelefstis"
 }

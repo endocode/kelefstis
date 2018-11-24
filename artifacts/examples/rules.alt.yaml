@@ -1,4 +1,4 @@
-apiVersion: samplecontroller.k8s.io/v1alpha1
+apiVersion: kelefstis.endocode.com/v1alpha1
 kind: RuleChecker
 metadata:
   description: my cluster, my rules

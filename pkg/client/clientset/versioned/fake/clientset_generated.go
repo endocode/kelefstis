@@ -25,8 +25,8 @@ import (
 	fakediscovery "k8s.io/client-go/discovery/fake"
 	"k8s.io/client-go/testing"
 	clientset "github.com/endocode/kelefstis/pkg/client/clientset/versioned"
-	samplecontrollerv1alpha1 "github.com/endocode/kelefstis/pkg/client/clientset/versioned/typed/samplecontroller/v1alpha1"
-	fakesamplecontrollerv1alpha1 "github.com/endocode/kelefstis/pkg/client/clientset/versioned/typed/samplecontroller/v1alpha1/fake"
+	kelefstisv1alpha1 "github.com/endocode/kelefstis/pkg/client/clientset/versioned/typed/kelefstis/v1alpha1"
+	fakekelefstisv1alpha1 "github.com/endocode/kelefstis/pkg/client/clientset/versioned/typed/kelefstis/v1alpha1/fake"
 )
 
 // NewSimpleClientset returns a clientset that will respond with the provided objects.
@@ -72,11 +72,11 @@ func (c *Clientset) Discovery() discovery.DiscoveryInterface {
 var _ clientset.Interface = &Clientset{}
 
 // SamplecontrollerV1alpha1 retrieves the SamplecontrollerV1alpha1Client
-func (c *Clientset) SamplecontrollerV1alpha1() samplecontrollerv1alpha1.SamplecontrollerV1alpha1Interface {
-	return &fakesamplecontrollerv1alpha1.FakeSamplecontrollerV1alpha1{Fake: &c.Fake}
+func (c *Clientset) SamplecontrollerV1alpha1() kelefstisv1alpha1.SamplecontrollerV1alpha1Interface {
+	return &fakekelefstisv1alpha1.FakeSamplecontrollerV1alpha1{Fake: &c.Fake}
 }
 
 // Samplecontroller retrieves the SamplecontrollerV1alpha1Client
-func (c *Clientset) Samplecontroller() samplecontrollerv1alpha1.SamplecontrollerV1alpha1Interface {
-	return &fakesamplecontrollerv1alpha1.FakeSamplecontrollerV1alpha1{Fake: &c.Fake}
+func (c *Clientset) Samplecontroller() kelefstisv1alpha1.SamplecontrollerV1alpha1Interface {
+	return &fakekelefstisv1alpha1.FakeSamplecontrollerV1alpha1{Fake: &c.Fake}
 }

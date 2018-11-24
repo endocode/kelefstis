@@ -46,11 +46,11 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
-	samplev1alpha1 "github.com/endocode/kelefstis/pkg/apis/samplecontroller/v1alpha1"
+	samplev1alpha1 "github.com/endocode/kelefstis/pkg/apis/kelefstis/v1alpha1"
 	clientset "github.com/endocode/kelefstis/pkg/client/clientset/versioned"
 	samplescheme "github.com/endocode/kelefstis/pkg/client/clientset/versioned/scheme"
-	informers "github.com/endocode/kelefstis/pkg/client/informers/externalversions/samplecontroller/v1alpha1"
-	listers "github.com/endocode/kelefstis/pkg/client/listers/samplecontroller/v1alpha1"
+	informers "github.com/endocode/kelefstis/pkg/client/informers/externalversions/kelefstis/v1alpha1"
+	listers "github.com/endocode/kelefstis/pkg/client/listers/kelefstis/v1alpha1"
 	"github.com/ghodss/yaml"
 )
 

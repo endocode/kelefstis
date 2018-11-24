@@ -19,17 +19,13 @@ limitations under the License.
 package fake
 
 import (
+	v1alpha1 "github.com/endocode/kelefstis/pkg/client/clientset/versioned/typed/kelefstis/v1alpha1"
 	rest "k8s.io/client-go/rest"
 	testing "k8s.io/client-go/testing"
-	v1alpha1 "github.com/endocode/kelefstis/pkg/client/clientset/versioned/typed/kelefstis/v1alpha1"
 )
 
 type FakeSamplecontrollerV1alpha1 struct {
 	*testing.Fake
-}
-
-func (c *FakeSamplecontrollerV1alpha1) Foos(namespace string) v1alpha1.FooInterface {
-	return &FakeFoos{c, namespace}
 }
 
 func (c *FakeSamplecontrollerV1alpha1) RuleCheckers(namespace string) v1alpha1.RuleCheckerInterface {

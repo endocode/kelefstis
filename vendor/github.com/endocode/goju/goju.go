@@ -66,7 +66,8 @@ func (t *TreeCheck) applyRule(offset, path string, treeValue reflect.Value,
 				method := reflect.ValueOf(t.Check).MethodByName(capMethod)
 				if method.IsValid() {
 					glog.V(5).Info(offset, "\t rules ", capMethod, v, cutString(tv, 40))
-					result := method.Call([]reflect.Value{reflect.ValueOf(v), reflect.ValueOf(tv)})
+					conv := fmt.Sprintf("%v", reflect.ValueOf(v))
+					result := method.Call([]reflect.Value{reflect.ValueOf(conv), reflect.ValueOf(tv)})
 					ok := result[0].Bool()
 					err := result[1].Interface()
 					if err == nil {
@@ -122,16 +123,12 @@ func (t *TreeCheck) traverse(offset, path string, tree interface{}, rules interf
 	case reflect.Slice, reflect.Array:
 		t.applyRule(offset, path, treeValue, rulesValue, rules)
 		ti, ok := tree.([]interface{})
-
 		if ok {
 			for i, vi := range ti {
 				index := fmt.Sprintf("%d:", i)
 				index = ""
 				t.traverse(offset+index+"\t", fmt.Sprintf(".%s[%d]", path, +i), vi, rules)
 			}
-		} else {
-			tu8 := tree.([]uint8)
-			glog.V(2).Infof("could not convert: \n-------------\n%s\n----------\n", tu8)
 		}
 
 	case reflect.Map:

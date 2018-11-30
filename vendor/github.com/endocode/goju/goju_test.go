@@ -104,6 +104,10 @@ func TestPodWithWrongRuleType(t *testing.T) {
 	assert.Equal(t, 0, tr.FalseCounter, "falseCounter")
 	assert.Equal(t, 0, tr.TrueCounter, "trueCounter")
 }
+
+func TestPlayWithWrongNumberInsteadString(t *testing.T) {
+	assert.Nil(t, Play("data/fullpods.json", "data/wrongnumber.json"))
+}
 func TestMain(m *testing.M) {
 	code := m.Run()
 

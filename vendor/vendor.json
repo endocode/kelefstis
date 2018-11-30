@@ -3,10 +3,10 @@
 	"ignore": "",
 	"package": [
 		{
-			"checksumSHA1": "xO+H9RzW07p0sgx5pUt4bXYkngM=",
+			"checksumSHA1": "ekmAj62wyzZClb7ZI1ZJ0Jm1xEM=",
 			"path": "github.com/endocode/goju",
-			"revision": "a683237e37da30c9efcb4399d50bc634d42aa516",
-			"revisionTime": "2018-07-08T10:28:36Z"
+			"revision": "34e7e379d48eb5c5a6b907192ee7427597aa2767",
+			"revisionTime": "2018-11-30T14:33:05Z"
 		}
 	],
 	"rootPath": "github.com/endocode/kelefstis"

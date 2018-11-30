@@ -13,7 +13,7 @@ spec:
             containers:
               range: "all"
               image:
-                matches: "^(k8s.gcr.io|gcr.io|quay.io/kubernetes-ingress-controller/nginx-ingress-controller)"
+                matches: "^(k8s.gcr.io|gcr.io|quay.io/kubernetes-ingress-controller)"
     - cluster:
         min: 3
         max: 10

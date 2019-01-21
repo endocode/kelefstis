@@ -178,6 +178,31 @@ of minikube are trusted, which are hosted mostly in `k8s.gcr.io` and
 `gcr.io`. The one exception `quay.io/kubernetes-ingress-controller/nginx-ingress-controller` must
 be explicitely named.
 
+## Check for privileged containers
+
+Running [Istio](https://istio.io/) in the standard configuration it is obvious, 
+that by adding a privileged container to the pod everybody can circumvent the entire security 
+of the [Envoy](https://www.envoyproxy.io/) sidecar. This is a well documented [issue](https://github.com/istio/old_issues_repo/issues/172).
+
+Therefore, Istio can only be run securely with the [Istio CNI Plugin](https://github.com/istio/cni#istio-cni-plugin), which is not the default.
+
+To check for running privileged containers, the rule
+```yaml
+...
+spec:
+  rules:
+    - pods:
+          ...
+          spec:
+            containers:
+              ...
+              securityContext:
+                privileged:
+                  equals: false
+...
+```
+should be used.
+
 ## Cleanup
 
 You can clean up the created CustomResourceDefinition with:

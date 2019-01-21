@@ -39,7 +39,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
-	appslisters "k8s.io/client-go/listers/apps/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
@@ -50,6 +49,7 @@ import (
 	samplescheme "github.com/endocode/kelefstis/pkg/client/clientset/versioned/scheme"
 	informers "github.com/endocode/kelefstis/pkg/client/informers/externalversions/kelefstis/v1alpha1"
 	listers "github.com/endocode/kelefstis/pkg/client/listers/kelefstis/v1alpha1"
+	"github.com/endocode/kelefstis/pkg/signals"
 	"github.com/ghodss/yaml"
 )
 
@@ -62,12 +62,11 @@ type Controller struct {
 	// sampleclientset is a clientset for our own API group
 	sampleclientset clientset.Interface
 
-	deploymentsLister  appslisters.DeploymentLister
-	deploymentsSynced  cache.InformerSynced
 	podsLister         corelisters.PodLister
 	podsSynced         cache.InformerSynced
 	ruleCheckersLister listers.RuleCheckerLister
 	ruleCheckersSynced cache.InformerSynced
+	informers          map[string]interface{}
 
 	// workqueue is a rate limited work queue. This is used to queue work to be
 	// processed instead of performing it as soon as a change happens. This
@@ -78,6 +77,9 @@ type Controller struct {
 	// recorder is an event recorder for recording Event resources to the
 	// Kubernetes API.
 	recorder record.EventRecorder
+
+	// signals so we handle the first shutdown signal gracefully
+	stopCh <-chan struct{}
 }
 
 // LogJSON adds structured JSON logging to the Verbose type
@@ -137,13 +139,14 @@ func NewController(
 	controller := &Controller{
 		kubeclientset:      kubeclientset,
 		sampleclientset:    sampleclientset,
-		deploymentsLister:  deploymentInformer.Lister(),
-		deploymentsSynced:  deploymentInformer.Informer().HasSynced,
 		podsLister:         podInformer.Lister(),
+		podsSynced:         podInformer.Informer().HasSynced,
 		ruleCheckersLister: ruleCheckersInformer.Lister(),
 		ruleCheckersSynced: ruleCheckersInformer.Informer().HasSynced,
 		workqueue:          workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Rules"),
 		recorder:           recorder,
+		stopCh:             signals.SetupSignalHandler(),
+		informers:          make(map[string]interface{}),
 	}
 
 	glog.Info("Setting up event handlers")
@@ -163,34 +166,62 @@ func NewController(
 		DeleteFunc: controller.handleObject,
 	})
 
-	checkRules := func(r interface{}, c string) {
-		rc := r.(*samplev1alpha1.RuleChecker)
+	checkRules := func(rules []*samplev1alpha1.RuleChecker, pods []*corev1.Pod, c string) {
+		treeCheck := ReportTreeCheck{goju.TreeCheck{Check: &goju.Check{}}}
 
-		intfb, _ := reUnMarshal(rc.Spec.Rules[0].M["pods"])
-		b, _ := yaml.Marshal(intfb)
-		glog.Infof("RuleChecker %s: \n%s", c, b)
-
-		treeCheck := goju.TreeCheck{Check: &goju.Check{}}
-
-		pods, _ := podInformer.Lister().List(labels.Everything())
-		for i, p := range pods {
-			intfp, _ := reUnMarshal(p)
-			glog.V(8).Infof("pod #%d\n", i)
-			treeCheck.Traverse(intfp, intfb)
+		_, ok := controller.informers["pods"]
+		if !ok {
+			// Wait for the caches to be synced before starting workers
+			glog.Infof("Waiting for pod caches to sync, %d messages pending", len(controller.stopCh))
+			if ok := cache.WaitForCacheSync(controller.stopCh, controller.podsSynced); ok {
+				controller.informers["pods"] = podInformer
+			} else {
+				glog.Info("failed to wait for caches to sync")
+				return
+			}
 		}
+		for _, rule := range rules {
 
-		glog.V(2).Infof("Errors       : %d\n", treeCheck.ErrorHistory.Len())
-		glog.V(2).Infof("Checks   true: %d\n", treeCheck.TrueCounter)
-		glog.V(2).Infof("Checks  false: %d\n", treeCheck.FalseCounter)
+			for ri, r := range rule.Spec.Rules {
+				intfb, _ := reUnMarshal(r.M["pods"])
+				b, _ := yaml.Marshal(intfb)
+				glog.V(4).Infof("RuleChecker %s: \n%s", c, b)
+
+				for pi, p := range pods {
+					intfp, _ := reUnMarshal(p)
+					glog.V(8).Infof("rule %d, pod #%d\n", ri, pi)
+					treeCheck.Traverse(intfp, intfb)
+				}
+			}
+		}
+		treeCheck.Report(4)
+	}
+
+	checkAllPods := func(obj interface{}, note string) {
+		l, err := podInformer.Lister().List(labels.Everything())
+
+		if err == nil {
+			r, ok := obj.(*samplev1alpha1.RuleChecker)
+			if ok {
+				checkRules([]*samplev1alpha1.RuleChecker{r}, l, note)
+			} else {
+				glog.V(1).Infof("this is not a pod %s ", obj)
+			}
+		} else {
+			glog.V(1).Infof("could not list pods error %s ", err)
+		}
 	}
 
 	ruleCheckersInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+
 		AddFunc: func(obj interface{}) {
-			checkRules(obj, "created")
+			checkAllPods(obj, "created")
 		},
+
 		UpdateFunc: func(obj, new interface{}) {
-			checkRules(new, "changed")
+			checkAllPods(new, "changed")
 		},
+
 		DeleteFunc: func(obj interface{}) {
 			rc := obj.(*samplev1alpha1.RuleChecker)
 			b, _ := yaml.Marshal(rc.Spec.Rules)
@@ -209,10 +240,22 @@ func NewController(
 
 	podInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
-			report("created", obj)
+			p, ok := obj.(*corev1.Pod)
+			r, err := ruleCheckersInformer.Lister().List(labels.Everything())
+			if err == nil && ok {
+				checkRules(r, []*corev1.Pod{p}, "created")
+			} else {
+				report("created", obj)
+			}
 		},
 		UpdateFunc: func(obj, new interface{}) {
-			report("changed to", new)
+			p, ok := new.(*corev1.Pod)
+			r, err := ruleCheckersInformer.Lister().List(labels.Everything())
+			if err == nil && ok {
+				checkRules(r, []*corev1.Pod{p}, "updated")
+			} else {
+				report("updated", new)
+			}
 		},
 		DeleteFunc: func(obj interface{}) {
 			report("deleted", obj)
@@ -229,13 +272,12 @@ func NewController(
 func (c *Controller) Run(threadiness int, stopCh <-chan struct{}) error {
 	defer runtime.HandleCrash()
 	defer c.workqueue.ShutDown()
-
+	c.stopCh = stopCh
 	// Start the informer factories to begin populating the informer caches
 	glog.Info("Starting controller")
 
-	// Wait for the caches to be synced before starting workers
-	glog.Info("Waiting for informer caches to sync")
-	if ok := cache.WaitForCacheSync(stopCh, c.deploymentsSynced); !ok {
+	glog.Info("Waiting for rulecheckers caches to sync")
+	if ok := cache.WaitForCacheSync(stopCh, c.ruleCheckersSynced); !ok {
 		return fmt.Errorf("failed to wait for caches to sync")
 	}
 

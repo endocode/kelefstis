@@ -108,6 +108,11 @@ func TestPodWithWrongRuleType(t *testing.T) {
 func TestPlayWithWrongNumberInsteadString(t *testing.T) {
 	assert.Nil(t, Play("data/fullpods.json", "data/wrongnumber.json"))
 }
+
+func TestPlayPrivilegedBool(t *testing.T) {
+	assert.Nil(t, Play("data/privileged.json", "data/bool.json"))
+}
+
 func TestMain(m *testing.M) {
 	code := m.Run()
 

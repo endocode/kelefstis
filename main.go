@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"os"
 	"time"
 
 	"github.com/golang/glog"
@@ -29,7 +30,6 @@ import (
 
 	clientset "github.com/endocode/kelefstis/pkg/client/clientset/versioned"
 	informers "github.com/endocode/kelefstis/pkg/client/informers/externalversions"
-	"github.com/endocode/kelefstis/pkg/signals"
 )
 
 var (
@@ -38,10 +38,10 @@ var (
 )
 
 func main() {
+	flag.Set("logtostderr", "true")
+	flag.Set("v", "1")
+	flag.Set("kubeconfig", os.Getenv("HOME")+"/.kube/config")
 	flag.Parse()
-
-	// set up signals so we handle the first shutdown signal gracefully
-	stopCh := signals.SetupSignalHandler()
 
 	cfg, err := clientcmd.BuildConfigFromFlags(masterURL, kubeconfig)
 	if err != nil {
@@ -65,10 +65,10 @@ func main() {
 		kubeInformerFactory.Core().V1().Pods(),
 		exampleInformerFactory.Samplecontroller().V1alpha1().RuleCheckers())
 
-	go kubeInformerFactory.Start(stopCh)
-	go exampleInformerFactory.Start(stopCh)
+	go kubeInformerFactory.Start(controller.stopCh)
+	go exampleInformerFactory.Start(controller.stopCh)
 
-	if err = controller.Run(2, stopCh); err != nil {
+	if err = controller.Run(2, controller.stopCh); err != nil {
 		glog.Fatalf("Error running controller: %s", err.Error())
 	}
 }

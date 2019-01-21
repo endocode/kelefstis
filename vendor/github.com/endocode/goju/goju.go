@@ -3,9 +3,11 @@ package goju
 import (
 	"container/list"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"github.com/golang/glog"
@@ -52,9 +54,61 @@ func cutString(i interface{}, l int) string {
 	return out
 }
 
+// ToStringValue turns the input interface into a Value based
+// on String
+func ToStringValue(i interface{}) reflect.Value {
+	f := reflect.ValueOf(i)
+	switch f.Kind() {
+
+	case reflect.Float64:
+		return reflect.ValueOf(strconv.FormatFloat(f.Float(), 'g', -1, 64))
+	case reflect.Bool:
+		if f.Bool() {
+			return reflect.ValueOf("true")
+		}
+		return reflect.ValueOf("false")
+	case reflect.String:
+		return f
+	}
+	return f
+}
+
+func (t *TreeCheck) methodCall(capMethod, offset, path string, v, tv interface{}) interface{} {
+	method := reflect.ValueOf(t.Check).MethodByName(capMethod)
+	if method.IsValid() {
+		glog.V(5).Infof("%s\t rules %s %s %s ", offset, capMethod, v, cutString(tv, 40))
+
+		conv := ToStringValue(v)
+		tvconv := ToStringValue(tv)
+
+		result := method.Call([]reflect.Value{conv, tvconv})
+
+		ok := result[0].Bool()
+		err := result[1].Interface()
+		level := 2
+		if ok {
+			t.TrueCounter++
+		} else {
+			t.FalseCounter++
+			level = 1
+		}
+		threshold := glog.Level(level)
+		if glog.V(threshold) {
+			glog.V(threshold).Infof("#%d: %s.%s(%q,%q): %t",
+				t.TrueCounter+t.FalseCounter, path, capMethod, conv, tvconv, ok)
+		}
+		return err
+	}
+
+	msg := fmt.Sprintf("no method %q", capMethod)
+	glog.V(5).Infof(msg)
+
+	return errors.New(msg)
+}
+
 func (t *TreeCheck) applyRule(offset, path string, treeValue reflect.Value,
 	rulesValue reflect.Value, rules interface{}) {
-	glog.V(5).Info(offset, "\t rules value Kind", rulesValue.Kind())
+	glog.V(5).Info(offset, "\t rules value Kind ", rulesValue.Kind())
 	switch rulesValue.Kind() {
 	case reflect.Map, reflect.String:
 		m, ok := rules.(map[string]interface{})
@@ -63,32 +117,13 @@ func (t *TreeCheck) applyRule(offset, path string, treeValue reflect.Value,
 
 			for k, v := range m {
 				capMethod := strings.Title(k)
-				method := reflect.ValueOf(t.Check).MethodByName(capMethod)
-				if method.IsValid() {
-					glog.V(5).Info(offset, "\t rules ", capMethod, v, cutString(tv, 40))
-					conv := fmt.Sprintf("%v", reflect.ValueOf(v))
-					result := method.Call([]reflect.Value{reflect.ValueOf(conv), reflect.ValueOf(tv)})
-					ok := result[0].Bool()
-					err := result[1].Interface()
-					if err == nil {
-						if ok {
-							t.TrueCounter++
-						} else {
-							t.FalseCounter++
-						}
-						if glog.V(2) {
-							glog.V(2).Infof("#%d: %s.%s(%q,%q): %t",
-								t.TrueCounter+t.FalseCounter, path, capMethod, v, tv, ok)
-						}
-					} else {
-						e := err.(error)
-						t.AddError("error #%d, %q:  %s.%s(%q,%q)", e, t.ErrorHistory.Len(), path, capMethod, v, tv)
-					}
-				} else {
+				err := t.methodCall(capMethod, offset, path, v, tv)
+				if err != nil {
 					switch treeValue.Kind() {
 					case reflect.String, reflect.Float64, reflect.Bool:
 						{
-							t.AddError("unknown method %q requested with args(%q, %q)", capMethod, v, cutString(tv, 40))
+							e, _ := err.(error)
+							t.AddError(e.Error())
 						}
 					}
 				}

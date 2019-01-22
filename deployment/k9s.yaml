@@ -15,8 +15,7 @@ spec:
         run: kelefstis
     spec:
       containers:
-      - image: k9s:latest
-        imagePullPolicy: Never
+      - image: quay.io/endocode/k9s:latest
         name: kelefstis
         volumeMounts:
           - name: kubeconfig

@@ -15,7 +15,7 @@ spec:
         run: kelefstis
     spec:
       containers:
-      - image: quay.io/endocode/k9s:latest
+      - image: quay.io/endocode/k7s:latest
         name: kelefstis
         volumeMounts:
           - name: kubeconfig

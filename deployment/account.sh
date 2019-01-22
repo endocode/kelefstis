@@ -9,7 +9,7 @@ set -o pipefail
 SERVICE_ACCOUNT_NAME=$1
 NAMESPACE=$2
 
-TMP=$(mktemp -d /tmp/k9s.XXXXXXXXXX)
+TMP=$(mktemp -d /tmp/k7s.XXXXXXXXXX)
 
 
 KUBECFG="$TMP/config"
@@ -70,10 +70,11 @@ kubectl config set-context \
 kubectl config use-context "${SERVICE_ACCOUNT_NAME}-${NAMESPACE}-${CLUSTER_NAME}" \
   --kubeconfig="${KUBECFG}"
 
-
-
 # -e "\\nAll done! Test with:"
 # "KUBECONFIG=${KUBECFG} kubectl get pods"
 # "you should not have any permissions by default - you have just created the authentication part"
 # "You will need to create RBAC permissions"
 KUBECONFIG=${KUBECFG} kubectl get pods
+
+echo "create the secret"
+echo kubectl create secret -n kube-system generic kelefstis --from-file=/tmp/k7s.C6UbYfsFJ9/config

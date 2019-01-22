@@ -1,0 +1,28 @@
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  namespace: ""
+  name: pod-reader
+rules:
+- apiGroups: [""] 
+  resources: ["pods","rulecheckers"]
+  verbs: ["get", "watch", "list"]
+- apiGroups: ["apps"] 
+  resources: ["deployments"]
+  verbs: ["get", "watch", "list"]
+- apiGroups: ["kelefstis.endocode.com"] 
+  resources: ["rulecheckers"]
+  verbs: ["get", "watch", "list"]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: read-pods
+subjects:
+- kind: ServiceAccount
+  name: test
+  namespace: default
+roleRef:
+  kind: ClusterRole #this must be Role or ClusterRole
+  name: pod-reader # this must match the name of the Role or ClusterRole you wish to bind to
+  apiGroup: ""

@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kelefstis
+  namespace: kube-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: kelefstis
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        run: kelefstis
+    spec:
+      containers:
+      - image: k9s:latest
+        imagePullPolicy: Never
+        name: kelefstis
+        volumeMounts:
+          - name: kubeconfig
+            mountPath: ".kube/"
+            readOnly: true
+      volumes:
+      - name: kubeconfig
+        secret:
+          secretName: kelefstis
+    

@@ -1,0 +1,25 @@
+{
+		"apiVersion": {
+			"equals": "v1",
+			"matches": "v"
+		},
+		"items": {
+			"length": "1",
+			"apiVersion":{
+				"equals": "v12"
+			},
+			"kind":{
+				"equals":"Pod"
+			},
+			"spec":{
+				"containers":{
+					"image":{
+						"matches":"^(gcr.io/(google[-_]containers|k8s-minikube)|k8s.gcr.io)"
+					},
+					"imagePullPolicy": {
+						"equals": "IfNotPresent"
+					}
+				}
+			}
+		}
+	}

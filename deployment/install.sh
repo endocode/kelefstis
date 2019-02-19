@@ -2,7 +2,7 @@
 set -e
 set -o pipefail
 
-[ $1 == "-x" ] && set -x && shift
+[ "$1" == "-x" ] && set -x && shift
 
 SERVICE_ACCOUNT_NAME="kelefstis"
 NAMESPACE="kube-system"
@@ -70,7 +70,7 @@ kubectl config use-context "${SERVICE_ACCOUNT_NAME}-${NAMESPACE}-${CLUSTER_NAME}
 kubectl create secret -n kube-system generic kelefstis --from-file=$TMP/config || true
 
 # create roles
-kubectl create -f role.yaml
+kubectl apply -f role.yaml
 
 # create the rulechecker crd and the rules
 kubectl apply -f ../artifacts/examples/rulecheckers-crd.yaml || true

@@ -17,6 +17,13 @@ spec:
       containers:
       - image: quay.io/endocode/k7s:latest
         name: kelefstis
+        command: 
+        - "/kelefstis"
+        args: 
+        - "-logtostderr"
+        - "-v"
+        - "2"
+        - "2>&1" 
         volumeMounts:
           - name: kubeconfig
             mountPath: ".kube/"

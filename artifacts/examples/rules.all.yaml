@@ -17,6 +17,13 @@ spec:
               securityContext:
                 privileged:
                   equals: false
+            initContainers:
+              range: "all"
+              image:
+                matches: "^(k8s.gcr.io|gcr.io|quay.io/kubernetes-ingress-controller|quay.io/endocode|quay.io/coreos|docker.io/istio|docker.io/prom)"
+              securityContext:
+                privileged:
+                  equals: false
 
     - cluster:
         min: 3

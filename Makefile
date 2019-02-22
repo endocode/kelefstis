@@ -11,6 +11,7 @@ PKGS := $(shell go list ./... | grep -v /vendor | grep -v generated)
 BUILDFLAGS := '-s'
 CGO_ENABLED = 0
 VENDOR_DIR=vendor
+GOPATH := $(pwd)/go
 
 all: build
 
@@ -21,7 +22,7 @@ check: fmt build test
 build:
 	$(GO) get ./...
 	CGO_ENABLED=$(CGO_ENABLED) $(GO)  build -ldflags $(BUILDFLAGS) 
-	
+
 test: 
 	CGO_ENABLED=$(CGO_ENABLED) $(GO) test $(PACKAGE_DIRS) -test.v
 

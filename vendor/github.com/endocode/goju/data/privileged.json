@@ -1,0 +1,20 @@
+{
+    "spec": {
+        "rules": [
+            {
+                "pods": {
+                    "spec": {
+                        "containers": {
+                            "securityContext": {
+                                "privileged": {
+                                    "equals": false
+                                }
+                            }
+                        }
+                        
+                    }
+                }
+            }
+        ]
+    }
+}

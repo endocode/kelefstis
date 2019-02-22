@@ -3,7 +3,7 @@ pipeline {
     label "jenkins-go"
   }
   environment {
-    ORG = 'thomasfricke'
+    ORG = 'endocode'
     APP_NAME = 'kelefstis'
     CHARTMUSEUM_CREDS = credentials('jenkins-x-chartmuseum')
   }
@@ -19,13 +19,13 @@ pipeline {
       }
       steps {
         container('go') {
-          dir('/home/jenkins/go/src/github.com/thomasfricke/kelefstis') {
+          dir('/home/jenkins/go/src/github.com/endocode/kelefstis') {
             checkout scm
             sh "make linux"
             sh "export VERSION=$PREVIEW_VERSION && skaffold build -f skaffold.yaml"
             sh "jx step post build --image $DOCKER_REGISTRY/$ORG/$APP_NAME:$PREVIEW_VERSION"
           }
-          dir('/home/jenkins/go/src/github.com/thomasfricke/kelefstis/charts/preview') {
+          dir('/home/jenkins/go/src/github.com/endocode/kelefstis/charts/preview') {
             sh "make preview"
             sh "jx preview --app $APP_NAME --dir ../.."
           }
@@ -38,7 +38,7 @@ pipeline {
       }
       steps {
         container('go') {
-          dir('/home/jenkins/go/src/github.com/thomasfricke/kelefstis') {
+          dir('/home/jenkins/go/src/github.com/endocode/kelefstis') {
             checkout scm
 
             // ensure we're not on a detached head
@@ -62,7 +62,7 @@ pipeline {
       }
       steps {
         container('go') {
-          dir('/home/jenkins/go/src/github.com/thomasfricke/kelefstis/charts/kelefstis') {
+          dir('/home/jenkins/go/src/github.com/endocode/kelefstis/charts/kelefstis') {
             sh "jx step changelog --version v\$(cat ../../VERSION)"
 
             // release the helm chart

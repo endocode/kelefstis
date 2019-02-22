@@ -7,7 +7,7 @@ build:
     docker: {}
   tagPolicy:
     envTemplate:
-      template: '{{.DOCKER_REGISTRY}}/thomasfricke/kelefstis:{{.VERSION}}'
+      template: '{{.DOCKER_REGISTRY}}/endocode/kelefstis:{{.VERSION}}'
   local: {}
 deploy:
   kubectl: {}
@@ -18,7 +18,7 @@ profiles:
     - docker: {}
     tagPolicy:
       envTemplate:
-        template: '{{.DOCKER_REGISTRY}}/thomasfricke/kelefstis:{{.DIGEST_HEX}}'
+        template: '{{.DOCKER_REGISTRY}}/endocode/kelefstis:{{.DIGEST_HEX}}'
     local: {}
   deploy:
     helm:
@@ -26,5 +26,5 @@ profiles:
       - name: kelefstis
         chartPath: charts/kelefstis
         setValueTemplates:
-          image.repository: '{{.DOCKER_REGISTRY}}/thomasfricke/kelefstis'
+          image.repository: '{{.DOCKER_REGISTRY}}/endocode/kelefstis'
           image.tag: '{{.DIGEST_HEX}}'

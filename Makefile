@@ -2,12 +2,13 @@ SHELL := /bin/bash
 GO := GO15VENDOREXPERIMENT=1 go
 NAME := kelefstis
 OS := $(shell uname)
-MAIN_GO := main.go
+MAIN_GO := ''
+#main.go
 ROOT_PACKAGE := $(GIT_PROVIDER)/thomasfricke/$(NAME)
 GO_VERSION := $(shell $(GO) version | sed -e 's/^[^0-9.]*\([0-9.]*\).*/\1/')
 PACKAGE_DIRS := $(shell $(GO) list ./... | grep -v /vendor/)
 PKGS := $(shell go list ./... | grep -v /vendor | grep -v generated)
-BUILDFLAGS := ''
+BUILDFLAGS := '-s'
 CGO_ENABLED = 0
 VENDOR_DIR=vendor
 
@@ -15,8 +16,10 @@ all: build
 
 check: fmt build test
 
+# CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -ldflags '-s'
+ 
 build:
-	CGO_ENABLED=$(CGO_ENABLED) $(GO) build -ldflags $(BUILDFLAGS) -o bin/$(NAME) $(MAIN_GO)
+	CGO_ENABLED=$(CGO_ENABLED) $(GO)  build -ldflags $(BUILDFLAGS) -o bin/$(NAME) $(MAIN_GO)
 
 test: 
 	CGO_ENABLED=$(CGO_ENABLED) $(GO) test $(PACKAGE_DIRS) -test.v

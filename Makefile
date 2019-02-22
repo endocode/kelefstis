@@ -20,8 +20,8 @@ check: fmt build test
  
 build:
 	$(GO) get ./...
-	CGO_ENABLED=$(CGO_ENABLED) $(GO)  build -ldflags $(BUILDFLAGS) -o bin/$(NAME) $(MAIN_GO)
-
+	CGO_ENABLED=$(CGO_ENABLED) $(GO)  build -ldflags $(BUILDFLAGS) 
+	
 test: 
 	CGO_ENABLED=$(CGO_ENABLED) $(GO) test $(PACKAGE_DIRS) -test.v
 

@@ -11,7 +11,7 @@ PKGS := $(shell go list ./... | grep -v /vendor | grep -v generated)
 BUILDFLAGS := '-s'
 CGO_ENABLED = 0
 VENDOR_DIR=vendor
-GOPATH := $(pwd)/go
+GOPATH := ${CURDIR}/go
 
 all: build
 

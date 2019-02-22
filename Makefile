@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-GO := GO15VENDOREXPERIMENT=1 go
+GO := go
 NAME := kelefstis
 OS := $(shell uname)
 MAIN_GO := ''

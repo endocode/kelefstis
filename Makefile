@@ -19,8 +19,7 @@ check: fmt build test
 # CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -ldflags '-s'
  
 build:
-	env
-	$(GO) get ./... && 	CGO_ENABLED=$(CGO_ENABLED) $(GO)  build -ldflags $(BUILDFLAGS) 
+	$(GO) get ./... && 	CGO_ENABLED=$(CGO_ENABLED)  GOOS=linux GOARCH=amd64 $(GO)  build -ldflags $(BUILDFLAGS) 
 
 test: 
 	CGO_ENABLED=$(CGO_ENABLED) $(GO) test $(PACKAGE_DIRS) -test.v

@@ -7,7 +7,27 @@ It has been derived from the original [sample-controller](https://github.com/kub
 
 ## Installation notes
 
-Go-get or vendor this package as `github.com/endocode/kelefstis`.
+For a fast deployment, use the `install.sh` script in the `deployment` folder
+
+```bash
+cd deployment
+./install.sh
+```
+
+### Building the Image
+
+The image is build without dependencies, just go into the `image` folder
+and run `k7s-image-from-scratch.sh`
+
+```bash
+cd image
+k7s-image-from-scratch.sh
+```
+
+### Compiling the code
+
+`go build` in this directory works out of the box,
+go-get or vendor this package as `github.com/endocode/kelefstis`.
 The installation with `go get github.com/endocode/kelefstis` will need some time,
 because a lot of Kubernetes code and other libs are involved but should work out of the box.
 

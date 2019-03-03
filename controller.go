@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -190,7 +191,9 @@ func NewController(
 				for pi, p := range pods {
 					intfp, _ := reUnMarshal(p)
 					glog.V(8).Infof("rule %d, pod #%d\n", ri, pi)
-					treeCheck.Traverse(intfp, intfb)
+
+					fullpath := fmt.Sprintf("Pod:v1:%s:%s: ", p.Namespace, p.Name)
+					treeCheck.Traverse(fullpath, intfp, intfb)
 				}
 			}
 		}
@@ -219,7 +222,13 @@ func NewController(
 		},
 
 		UpdateFunc: func(obj, new interface{}) {
-			checkAllPods(new, "changed")
+			//checkAllPods(new, "changed")
+
+			n, ok1 := new.(*samplev1alpha1.RuleChecker)
+			o, ok2 := obj.(*samplev1alpha1.RuleChecker)
+			if ok1 && ok2 && !reflect.DeepEqual(o.Spec, n.Spec) {
+				checkAllPods(new, "changed")
+			}
 		},
 
 		DeleteFunc: func(obj interface{}) {
@@ -249,12 +258,15 @@ func NewController(
 			}
 		},
 		UpdateFunc: func(obj, new interface{}) {
-			p, ok := new.(*corev1.Pod)
+			n, ok1 := new.(*corev1.Pod)
+			o, ok2 := obj.(*corev1.Pod)
 			r, err := ruleCheckersInformer.Lister().List(labels.Everything())
-			if err == nil && ok {
-				checkRules(r, []*corev1.Pod{p}, "updated")
+			if err == nil && ok1 && ok2 && !reflect.DeepEqual(o.Spec, n.Spec) {
+				checkRules(r, []*corev1.Pod{n}, "updated")
 			} else {
-				report("updated", new)
+				if glog.V(4) {
+					report("updated", new)
+				}
 			}
 		},
 		DeleteFunc: func(obj interface{}) {

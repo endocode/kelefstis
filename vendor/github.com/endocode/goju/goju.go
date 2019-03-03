@@ -140,8 +140,8 @@ func (t *TreeCheck) applyRule(offset, path string, treeValue reflect.Value,
 // Traverse check if tree complies according to rules
 // Both are dictionaries with strings as keys
 // and dictionaries or strings as value
-func (t *TreeCheck) Traverse(tree interface{}, rules interface{}) {
-	t.traverse("", "", tree, rules)
+func (t *TreeCheck) Traverse(prefix string, tree interface{}, rules interface{}) {
+	t.traverse("", prefix, tree, rules)
 }
 
 func (t *TreeCheck) traverse(offset, path string, tree interface{}, rules interface{}) {
@@ -162,7 +162,7 @@ func (t *TreeCheck) traverse(offset, path string, tree interface{}, rules interf
 			for i, vi := range ti {
 				index := fmt.Sprintf("%d:", i)
 				index = ""
-				t.traverse(offset+index+"\t", fmt.Sprintf(".%s[%d]", path, +i), vi, rules)
+				t.traverse(offset+index+"\t", fmt.Sprintf("%s[%d]", path, +i), vi, rules)
 			}
 		}
 
@@ -212,7 +212,7 @@ func Play(json, rule string) error {
 
 	tr := &TreeCheck{Check: &Check{}}
 
-	tr.Traverse(tree, ruletree)
+	tr.Traverse("", tree, ruletree)
 
 	glog.V(1).Infof("Errors       : %d\n", tr.ErrorHistory.Len())
 	glog.V(1).Infof("Checks   true: %d\n", tr.TrueCounter)

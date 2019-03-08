@@ -167,7 +167,7 @@ func NewController(
 		DeleteFunc: controller.handleObject,
 	})
 
-	checkRules := func(rules []*samplev1alpha1.RuleChecker, pods []*corev1.Pod, c string) {
+	checkRules := func(rules []*samplev1alpha1.RuleChecker, pods []interface{}, c string) {
 		treeCheck := ReportTreeCheck{goju.TreeCheck{Check: &goju.Check{}}}
 
 		_, ok := controller.informers["pods"]
@@ -191,8 +191,10 @@ func NewController(
 				for pi, p := range pods {
 					intfp, _ := reUnMarshal(p)
 					glog.V(8).Infof("rule %d, pod #%d\n", ri, pi)
-
-					fullpath := fmt.Sprintf("Pod:v1:%s:%s: ", p.Namespace, p.Name)
+					po := reflect.ValueOf(p)
+					namespace := reflect.Indirect(po).FieldByName("Namespace")
+					name := reflect.Indirect(po).FieldByName("Name")
+					fullpath := fmt.Sprintf("%s:%s:%s: ", reflect.TypeOf(p).Elem(), namespace, name)
 					treeCheck.Traverse(fullpath, intfp, intfb)
 				}
 			}
@@ -206,7 +208,15 @@ func NewController(
 		if err == nil {
 			r, ok := obj.(*samplev1alpha1.RuleChecker)
 			if ok {
-				checkRules([]*samplev1alpha1.RuleChecker{r}, l, note)
+
+				il := make([]interface{}, len(l))
+
+				for k, i := range l {
+					li := reflect.ValueOf(i).Interface().(interface{})
+					il[k] = li
+				}
+
+				checkRules([]*samplev1alpha1.RuleChecker{r}, il, note)
 			} else {
 				glog.V(1).Infof("this is not a pod %s ", obj)
 			}
@@ -249,20 +259,24 @@ func NewController(
 
 	podInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
-			p, ok := obj.(*corev1.Pod)
 			r, err := ruleCheckersInformer.Lister().List(labels.Everything())
-			if err == nil && ok {
-				checkRules(r, []*corev1.Pod{p}, "created")
+			if err == nil {
+				checkRules(r, []interface{}{obj}, "created")
 			} else {
 				report("created", obj)
 			}
 		},
 		UpdateFunc: func(obj, new interface{}) {
-			n, ok1 := new.(*corev1.Pod)
-			o, ok2 := obj.(*corev1.Pod)
+			/* should be gerneralized by reflection */
+			ro := reflect.ValueOf(obj)
+			so := reflect.Indirect(ro).FieldByName("Spec")
+
+			rn := reflect.ValueOf(new)
+			sn := reflect.Indirect(rn).FieldByName("Spec")
+
 			r, err := ruleCheckersInformer.Lister().List(labels.Everything())
-			if err == nil && ok1 && ok2 && !reflect.DeepEqual(o.Spec, n.Spec) {
-				checkRules(r, []*corev1.Pod{n}, "updated")
+			if err == nil && !reflect.DeepEqual(so, sn) {
+				checkRules(r, []interface{}{new}, "updated")
 			} else {
 				if glog.V(4) {
 					report("updated", new)

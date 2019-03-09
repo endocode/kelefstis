@@ -61,8 +61,8 @@ type Controller struct {
 	// kubeclientset is a standard kubernetes clientset
 	kubeclientset kubernetes.Interface
 	// sampleclientset is a clientset for our own API group
-	sampleclientset clientset.Interface
-
+	sampleclientset    clientset.Interface
+	listers            map[string]interface{}
 	podsLister         corelisters.PodLister
 	podsSynced         cache.InformerSynced
 	ruleCheckersLister listers.RuleCheckerLister
@@ -141,6 +141,7 @@ func NewController(
 		kubeclientset:      kubeclientset,
 		sampleclientset:    sampleclientset,
 		podsLister:         podInformer.Lister(),
+		listers:            make(map[string]interface{}),
 		podsSynced:         podInformer.Informer().HasSynced,
 		ruleCheckersLister: ruleCheckersInformer.Lister(),
 		ruleCheckersSynced: ruleCheckersInformer.Informer().HasSynced,
@@ -149,7 +150,7 @@ func NewController(
 		stopCh:             signals.SetupSignalHandler(),
 		informers:          make(map[string]interface{}),
 	}
-
+	controller.listers["pod"] = controller.podsLister
 	glog.Info("Setting up event handlers")
 	// Set up an event handler for when rule and pod resources change
 	deploymentInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -203,15 +204,26 @@ func NewController(
 	}
 
 	checkAllPods := func(obj interface{}, note string) {
-		l, err := podInformer.Lister().List(labels.Everything())
+		//l, err := controller.podsLister.List(labels.Everything())
+		rl := []reflect.Value{reflect.ValueOf(labels.Everything())}
+		rr := reflect.ValueOf(controller.listers["pod"]).MethodByName("List").Call(rl)
 
-		if err == nil {
+		ri := make([]interface{}, rr[0].Len())
+
+		for k, i := range ri {
+			ri[k] = reflect.ValueOf(i).Interface().(interface{})
+		}
+
+		err, errnotnil := rr[1].Interface().(error)
+		if errnotnil {
+			glog.V(1).Infof("could not list pods error %s ", err)
+		} else {
 			r, ok := obj.(*samplev1alpha1.RuleChecker)
 			if ok {
 
-				il := make([]interface{}, len(l))
+				il := make([]interface{}, rr[0].Len())
 
-				for k, i := range l {
+				for k, i := range ri {
 					li := reflect.ValueOf(i).Interface().(interface{})
 					il[k] = li
 				}
@@ -220,8 +232,6 @@ func NewController(
 			} else {
 				glog.V(1).Infof("this is not a pod %s ", obj)
 			}
-		} else {
-			glog.V(1).Infof("could not list pods error %s ", err)
 		}
 	}
 
@@ -259,7 +269,7 @@ func NewController(
 
 	podInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
-			r, err := ruleCheckersInformer.Lister().List(labels.Everything())
+			r, err := controller.ruleCheckersLister.List(labels.Everything())
 			if err == nil {
 				checkRules(r, []interface{}{obj}, "created")
 			} else {

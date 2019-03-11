@@ -28,14 +28,12 @@ import (
 
 	"github.com/endocode/goju"
 	"github.com/golang/glog"
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
-	appsinformers "k8s.io/client-go/informers/apps/v1"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -62,12 +60,12 @@ type Controller struct {
 	kubeclientset kubernetes.Interface
 	// sampleclientset is a clientset for our own API group
 	sampleclientset    clientset.Interface
+	informerFactory    func(string) interface{}
+	informers          map[string]interface{}
 	listers            map[string]interface{}
-	podsLister         corelisters.PodLister
 	podsSynced         cache.InformerSynced
 	ruleCheckersLister listers.RuleCheckerLister
 	ruleCheckersSynced cache.InformerSynced
-	informers          map[string]interface{}
 
 	// workqueue is a rate limited work queue. This is used to queue work to be
 	// processed instead of performing it as soon as a change happens. This
@@ -113,18 +111,25 @@ func reUnMarshal(i interface{}) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	glog.V(12).Infof("marshaled to ------------\n%s\n------------\n")
+	glog.V(12).Infof("marshaled to ------------\n%s\n------------\n", b)
 	var r interface{}
 	err = yaml.Unmarshal(b, &r)
 	return r, err
+}
+func metaInfo(obj interface{}) (reflect.Value, reflect.Type, reflect.Value, reflect.Value) {
+	rvo := reflect.ValueOf(obj)
+	namespace := reflect.Indirect(rvo).FieldByName("Namespace")
+	name := reflect.Indirect(rvo).FieldByName("Name")
+	t := reflect.TypeOf(obj).Elem()
+	return rvo, t, namespace, name
 }
 
 // NewController returns a new sample controller
 func NewController(
 	kubeclientset kubernetes.Interface,
 	sampleclientset clientset.Interface,
-	deploymentInformer appsinformers.DeploymentInformer,
-	podInformer coreinformers.PodInformer,
+	//podInformer coreinformers.PodInformer,
+	informerFactory func(string) interface{},
 	ruleCheckersInformer informers.RuleCheckerInformer) *Controller {
 
 	// Create event broadcaster
@@ -137,10 +142,18 @@ func NewController(
 	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeclientset.CoreV1().Events("")})
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: controllerAgentName})
 
+	types := corelisters.Types
+	for k := range types {
+		glog.Infof("Found type %s", k)
+	}
+	// pl := (*types)["PodLister"]
+
+	podInformer := informerFactory("Pods").(coreinformers.PodInformer)
 	controller := &Controller{
 		kubeclientset:      kubeclientset,
 		sampleclientset:    sampleclientset,
-		podsLister:         podInformer.Lister(),
+		informerFactory:    informerFactory,
+		informers:          make(map[string]interface{}),
 		listers:            make(map[string]interface{}),
 		podsSynced:         podInformer.Informer().HasSynced,
 		ruleCheckersLister: ruleCheckersInformer.Lister(),
@@ -148,25 +161,11 @@ func NewController(
 		workqueue:          workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Rules"),
 		recorder:           recorder,
 		stopCh:             signals.SetupSignalHandler(),
-		informers:          make(map[string]interface{}),
 	}
-	controller.listers["pod"] = controller.podsLister
-	glog.Info("Setting up event handlers")
+	controller.listers["pod"] = podInformer.Lister()
+
+	glog.Info("Setting up event handlers for")
 	// Set up an event handler for when rule and pod resources change
-	deploymentInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: controller.handleObject,
-		UpdateFunc: func(old, new interface{}) {
-			newDepl := new.(*appsv1.Deployment)
-			oldDepl := old.(*appsv1.Deployment)
-			if newDepl.ResourceVersion == oldDepl.ResourceVersion {
-				// Periodic resync will send update events for all known Deployments.
-				// Two different versions of the same Deployment will always have different RVs.
-				return
-			}
-			controller.handleObject(new)
-		},
-		DeleteFunc: controller.handleObject,
-	})
 
 	checkRules := func(rules []*samplev1alpha1.RuleChecker, pods []interface{}, c string) {
 		treeCheck := ReportTreeCheck{goju.TreeCheck{Check: &goju.Check{}}}
@@ -192,10 +191,9 @@ func NewController(
 				for pi, p := range pods {
 					intfp, _ := reUnMarshal(p)
 					glog.V(8).Infof("rule %d, pod #%d\n", ri, pi)
-					po := reflect.ValueOf(p)
-					namespace := reflect.Indirect(po).FieldByName("Namespace")
-					name := reflect.Indirect(po).FieldByName("Name")
-					fullpath := fmt.Sprintf("%s:%s:%s: ", reflect.TypeOf(p).Elem(), namespace, name)
+
+					_, t, ns, n := metaInfo(p)
+					fullpath := fmt.Sprintf("%s:%s:%s: ", t, ns, n)
 					treeCheck.Traverse(fullpath, intfp, intfb)
 				}
 			}
@@ -208,12 +206,6 @@ func NewController(
 		rl := []reflect.Value{reflect.ValueOf(labels.Everything())}
 		rr := reflect.ValueOf(controller.listers["pod"]).MethodByName("List").Call(rl)
 
-		ri := make([]interface{}, rr[0].Len())
-
-		for k, i := range ri {
-			ri[k] = reflect.ValueOf(i).Interface().(interface{})
-		}
-
 		err, errnotnil := rr[1].Interface().(error)
 		if errnotnil {
 			glog.V(1).Infof("could not list pods error %s ", err)
@@ -221,14 +213,13 @@ func NewController(
 			r, ok := obj.(*samplev1alpha1.RuleChecker)
 			if ok {
 
-				il := make([]interface{}, rr[0].Len())
+				ri := make([]interface{}, rr[0].Len())
 
-				for k, i := range ri {
-					li := reflect.ValueOf(i).Interface().(interface{})
-					il[k] = li
+				for k := range ri {
+					ri[k] = rr[0].Index(k).Interface().(interface{})
 				}
 
-				checkRules([]*samplev1alpha1.RuleChecker{r}, il, note)
+				checkRules([]*samplev1alpha1.RuleChecker{r}, ri, note)
 			} else {
 				glog.V(1).Infof("this is not a pod %s ", obj)
 			}
@@ -259,10 +250,10 @@ func NewController(
 	})
 
 	report := func(c string, obj interface{}) {
-		p := obj.(*corev1.Pod)
-		glog.Infof("Pod %s %s: \n", p.Name, c)
+		_, t, ns, n := metaInfo(obj)
+		glog.Infof("%s:%s:%s %s\n", t, ns, n, c)
 		if glog.V(4) {
-			b, _ := yaml.Marshal(p)
+			b, _ := yaml.Marshal(obj)
 			glog.Infof("%s", b)
 		}
 	}

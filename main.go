@@ -19,12 +19,14 @@ package main
 import (
 	"flag"
 	"os"
+	"reflect"
 	"time"
 
 	"github.com/golang/glog"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
+
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	// _ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
@@ -58,11 +60,18 @@ func main() {
 		glog.Fatalf("Error building example clientset: %s", err.Error())
 	}
 
+	/* 	kif := kubeinformers.NewSharedInformerFactory(kubeClient, time.Second*30)
+	   	rpi := reflect.ValueOf(kif.Core().V1()).MethodByName("Pods").Call([]reflect.Value{})
+			 pi := rpi[0].Interface().(coreinformers.PodInformer) */
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, time.Second*30)
+
+	informerFactory := func(name string) interface{} {
+		rpi := reflect.ValueOf(kubeInformerFactory.Core().V1()).MethodByName(name).Call([]reflect.Value{})
+		return rpi[0].Interface()
+	}
 	exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
 	controller := NewController(kubeClient, exampleClient,
-		kubeInformerFactory.Apps().V1().Deployments(),
-		kubeInformerFactory.Core().V1().Pods(),
+		informerFactory,
 		exampleInformerFactory.Samplecontroller().V1alpha1().RuleCheckers())
 
 	go kubeInformerFactory.Start(controller.stopCh)

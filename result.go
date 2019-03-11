@@ -5,6 +5,8 @@ import (
 	"github.com/golang/glog"
 )
 
+// ReportTreeCheck enhances goju.TreeCheck
+// by a Report methods to glog
 type ReportTreeCheck struct {
 	goju.TreeCheck
 }

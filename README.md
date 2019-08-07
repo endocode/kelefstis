@@ -46,19 +46,14 @@ This particular example demonstrates how to perform one basic operation:
 * anything else is not tested, yet
 * test have been performed against [minikube v1.10](https://kubernetes.io/docs/setup/minikube/)
 
-It makes use of the generators in [k8s.io/code-generator](https://github.com/kubernetes/code-generator)
+## Deprecated 
+
+It makes no longer use of the generators in [k8s.io/code-generator](https://github.com/kubernetes/code-generator)
 to generate a typed client, informers, listers and deep-copy functions. You can
 do this yourself using the `./hack/update-codegen.sh` script.
 
-The `update-codegen` script will automatically generate the following files &
-directories:
-
-* `pkg/apis/kelefstis/v1alpha1/zz_generated.deepcopy.go`
-* `pkg/client/`
-
-Changes should not be made to these files manually, and when creating your own
-controller based off of this implementation you should not copy these files and
-instead run the `update-codegen` script to generate your own.
+The [goju library](https://github.com/endocode/goju) is not longer used to implement checks
+of JSON or YAML definitions by these rules.
 
 This is an example of how to build use a controller and do simple checks from the inside.
 The principal structure of a `RuleChecker` show, that the definition follows the definition
@@ -75,29 +70,55 @@ metadata:
   description: "my cluster, my rules"
 spec:
   rules:
-    * pods:
-          range: "all"
-          namespace:
-            eq: "lirumlarum"
-          spec:
-            containers:
-              range: "all"
-              image:
-                matches: "^(k8s.gcr.io|gcr.io|quay.io/kubernetes-ingress-controller/nginx-ingress-controller)"
-    * cluster:
+    - kind: "Pod"
+      apiVersion: "v1"
+      metadata:
+        namespace:
+          eq: "lirumlarum"
+      spec:
+        containers:
+        - image:
+            matches: "\
+              (k8s.gcr.io|\
+              gcr.io|\
+              quay.io/kubernetes-ingress-controller|\
+              quay.io/endocode|\
+              quay.io/coreos|\
+              docker.io/istio|\
+              docker.io/prom)\
+              "
+            securityContext:
+              privileged:
+                equals: false
+                must: true
+        initContainers:
+        - image:
+            matches: "^(k8s.gcr.io|gcr.io|quay.io/kubernetes-ingress-controller|quay.io/endocode|quay.io/coreos|docker.io/istio|docker.io/prom)"
+            securityContext:
+              privileged:
+                equals: false
+                must: true
+    - kind: "Cluster"
+      apiVersion: "some/v1beta"
+      spec:
         min: 3
         max: 10
-    * nodes:
-        memory:
-          min: 100GB
+    - kind: "Node"
+      apiVersion: "v1"
+      status:
+        allocatable:
+          cpu:
+            min: "2"
+          pods:
+            max: "200"
+
 ```
 
-The [goju library](https://github.com/endocode/goju) is used to implement checks
-of JSON or YAML definitions by these rules.
+
 
 ## Details
 
-The sample controller uses [client-go library](https://github.com/kubernetes/client-go/tree/master/tools/cache) extensively.
+The sample controller uses the `unstructured` library of [client-go library](https://github.com/kubernetes/client-go/) extensively.
 The details of interaction points of the sample controller with various mechanisms from this library are
 explained [here](docs/controller-client-go.md).
 
@@ -147,48 +168,70 @@ matches `gcr.io` only, accepting 15 containers. Finally, `rule.all` matches all 
 best regexp `^(k8s.gcr.io|gcr.io|quay.io/kubernetes-ingress-controller/nginx-ingress-controller)`
 
 ```sh
-...
-I1124 18:28:35.043910    5628 controller.go:171] RuleChecker changed:
-namespace:
-  eq: default
-range: all
-spec:
-  containers:
-    image:
-      matches: gcr.io
-    range: all
-I1124 18:28:35.049328    5628 goju.go:79] #1: ..spec.containers[0].image.Matches("gcr.io","gcr.io/k8s-minikube/storage-provisioner:v1.8.1"): true
-I1124 18:28:35.057331    5628 goju.go:79] #2: ..spec.containers[0].image.Matches("gcr.io","k8s.gcr.io/heapster-amd64:v1.5.3"): true
-I1124 18:28:35.059445    5628 controller.go:203] Pod nginx-ingress-controller-8566746984-jbxnc changed to:
-I1124 18:28:35.059696    5628 controller.go:203] Pod influxdb-grafana-5l2fc changed to:
-I1124 18:28:35.059823    5628 controller.go:203] Pod kube-scheduler-minikube changed to:
-I1124 18:28:35.059952    5628 controller.go:203] Pod kube-dns-86f4d74b45-77m5n changed to:
-I1124 18:28:35.060028    5628 controller.go:203] Pod default-http-backend-544569b6d7-5c8qn changed to:
-I1124 18:28:35.060040    5628 controller.go:203] Pod etcd-minikube changed to:
-I1124 18:28:35.060051    5628 controller.go:203] Pod kube-addon-manager-minikube changed to:
-I1124 18:28:35.060060    5628 controller.go:203] Pod kube-proxy-prhqv changed to:
-I1124 18:28:35.060069    5628 controller.go:203] Pod kube-controller-manager-minikube changed to:
-I1124 18:28:35.060080    5628 controller.go:203] Pod kube-apiserver-minikube changed to:
-I1124 18:28:35.060091    5628 controller.go:203] Pod kubernetes-dashboard-6f4cfc5d87-4h4kh changed to:
-I1124 18:28:35.060106    5628 controller.go:203] Pod storage-provisioner changed to:
-I1124 18:28:35.060120    5628 controller.go:203] Pod heapster-7dcb9 changed to:
-I1124 18:28:35.062425    5628 goju.go:79] #3: ..spec.containers[0].image.Matches("gcr.io","k8s.gcr.io/kube-addon-manager:v8.6"): true
-I1124 18:28:35.064582    5628 goju.go:79] #4: ..spec.containers[0].image.Matches("gcr.io","k8s.gcr.io/kube-proxy-amd64:v1.10.0"): true
-I1124 18:28:35.066631    5628 goju.go:79] #5: ..spec.containers[0].image.Matches("gcr.io","k8s.gcr.io/kube-controller-manager-amd64:v1.10.0"): true
-I1124 18:28:35.068721    5628 goju.go:79] #6: ..spec.containers[0].image.Matches("gcr.io","k8s.gcr.io/kube-apiserver-amd64:v1.10.0"): true
-I1124 18:28:35.070504    5628 goju.go:79] #7: ..spec.containers[0].image.Matches("gcr.io","k8s.gcr.io/kubernetes-dashboard-amd64:v1.10.0"): true
-I1124 18:28:35.073835    5628 goju.go:79] #8: ..spec.containers[0].image.Matches("gcr.io","gcr.io/google_containers/defaultbackend:1.4"): true
-I1124 18:28:35.075446    5628 goju.go:79] #9: ..spec.containers[0].image.Matches("gcr.io","k8s.gcr.io/etcd-amd64:3.1.12"): true
-I1124 18:28:35.077445    5628 goju.go:79] #10: ..spec.containers[0].image.Matches("gcr.io","quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.19.0"): false
-I1124 18:28:35.079813    5628 goju.go:79] #11: ..spec.containers[0].image.Matches("gcr.io","k8s.gcr.io/heapster-influxdb-amd64:v1.3.3"): true
-I1124 18:28:35.079863    5628 goju.go:79] #12: ..spec.containers[1].image.Matches("gcr.io","k8s.gcr.io/heapster-grafana-amd64:v4.4.3"): true
-I1124 18:28:35.081979    5628 goju.go:79] #13: ..spec.containers[0].image.Matches("gcr.io","k8s.gcr.io/kube-scheduler-amd64:v1.10.0"): true
-I1124 18:28:35.087990    5628 goju.go:79] #14: ..spec.containers[0].image.Matches("gcr.io","k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.8"): true
-I1124 18:28:35.088039    5628 goju.go:79] #15: ..spec.containers[1].image.Matches("gcr.io","k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64:1.14.8"): true
-I1124 18:28:35.088079    5628 goju.go:79] #16: ..spec.containers[2].image.Matches("gcr.io","k8s.gcr.io/k8s-dns-sidecar-amd64:1.14.8"): true
-I1124 18:28:35.088100    5628 controller.go:182] Errors       : 0
-I1124 18:28:35.088107    5628 controller.go:183] Checks   true: 15
-I1124 18:28:35.088113    5628 controller.go:184] Checks  false: 1
+I0807 20:10:57.596563   13136 main.go:197] Creating watch
+I0807 20:10:57.597407   13136 main.go:206] Creating channel
+I0807 20:10:57.651252   13136 main.go:60] add: kelefstis.endocode.com/v1alpha1:RuleChecker/default/rules
+I0807 20:10:57.651301   13136 main.go:60] add: kelefstis.endocode.com/v1alpha1:RuleChecker/default/rules
+I0807 20:10:57.651321   13136 main.go:60] add: kelefstis.endocode.com/v1alpha1:RuleChecker/default/rules
+I0807 20:10:57.651339   13136 main.go:156] adding rule kelefstis.endocode.com/v1alpha1:RuleChecker/default/rules
+I0807 20:10:57.701636   13136 treecheck.go:45] add: v1:Pod/kube-system/kube-controller-manager-kind-control-plane2
+I0807 20:10:57.702097   13136 result.go:200] result Matches((k8s.gcr.io|gcr.io|quay.io/kubernetes-ingress-controller|quay.io/endocode|quay.io/coreos|docker.io/istio|docker.io/prom),k8s.gcr.io/kube-controller-manager:v1.15.0) = (true, ok)
+I0807 20:10:57.702182   13136 result.go:70] checking object v1:Pod/kube-system/kube-controller-manager-kind-control-plane2 by rule kelefstis.endocode.com/v1alpha1:RuleChecker/default/rules: 2 true, 0 false
+I0807 20:10:57.702209   13136 treecheck.go:45] add: v1:Pod/kube-system/kube-proxy-4bqhc
+I0807 20:10:57.702386   13136 result.go:200] result Matches((k8s.gcr.io|gcr.io|quay.io/kubernetes-ingress-controller|quay.io/endocode|quay.io/coreos|docker.io/istio|docker.io/prom),k8s.gcr.io/kube-proxy:v1.15.0) = (true, ok)
+I0807 20:10:57.702436   13136 result.go:70] checking object v1:Pod/kube-system/kube-proxy-4bqhc by rule kelefstis.endocode.com/v1alpha1:RuleChecker/default/rules: 2 true, 0 false
+I0807 20:10:57.702458   13136 treecheck.go:45] add: v1:Pod/kube-system/kindnet-8nzd7
+I0807 20:10:57.702627   13136 result.go:200] result Matches((k8s.gcr.io|gcr.io|quay.io/kubernetes-ingress-controller|quay.io/endocode|quay.io/coreos|docker.io/istio|docker.io/prom),kindest/kindnetd:0.5.0) = (false, ok)
+I0807 20:10:57.702673   13136 result.go:70] checking object v1:Pod/kube-system/kindnet-8nzd7 by rule kelefstis.endocode.com/v1alpha1:RuleChecker/default/rules: 0 true, 2 false
+I0807 20:10:57.702694   13136 treecheck.go:45] add: v1:Pod/kube-system/kube-proxy-xzmqq
+I0807 20:10:57.702869   13136 result.go:200] result Matches((k8s.gcr.io|gcr.io|quay.io/kubernetes-ingress-controller|quay.io/endocode|quay.io/coreos|docker.io/istio|docker.io/prom),k8s.gcr.io/kube-proxy:v1.15.0) = (true, ok)
+I0807 20:10:57.702903   13136 result.go:70] checking object v1:Pod/kube-system/kube-proxy-xzmqq by rule kelefstis.endocode.com/v1alpha1:RuleChecker/default/rules: 2 true, 0 false
+I0807 20:10:57.702924   13136 treecheck.go:45] add: v1:Pod/kube-system/kube-scheduler-kind-control-plane3
+I0807 20:10:57.703096   13136 result.go:200] result Matches((k8s.gcr.io|gcr.io|quay.io/kubernetes-ingress-controller|quay.io/endocode|quay.io/coreos|docker.io/istio|docker.io/prom),k8s.gcr.io/kube-scheduler:v1.15.0) = (true, ok)
+I0807 20:10:57.703149   13136 result.go:70] checking object v1:Pod/kube-system/kube-scheduler-kind-control-plane3 by rule kelefstis.endocode.com/v1alpha1:RuleChecker/default/rules: 2 true, 0 false
+I0807 20:10:57.703170   13136 treecheck.go:45] add: v1:Pod/kube-system/kube-scheduler-kind-control-plane
+I0807 20:10:57.703371   13136 result.go:200] result Matches((k8s.gcr.io|gcr.io|quay.io/kubernetes-ingress-controller|quay.io/endocode|quay.io/coreos|docker.io/istio|docker.io/prom),k8s.gcr.io/kube-scheduler:v1.15.0) = (true, ok)
+I0807 20:10:57.703414   13136 result.go:70] checking object v1:Pod/kube-system/kube-scheduler-kind-control-plane by rule kelefstis.endocode.com/v1alpha1:RuleChecker/default/rules: 2 true, 0 false
+I0807 20:10:57.703434   13136 treecheck.go:45] add: v1:Pod/kube-system/etcd-kind-control-plane2
+I0807 20:10:57.703615   13136 result.go:200] result Matches((k8s.gcr.io|gcr.io|quay.io/kubernetes-ingress-controller|quay.io/endocode|quay.io/coreos|docker.io/istio|docker.io/prom),k8s.gcr.io/etcd:3.3.10) = (true, ok)
+I0807 20:10:57.703657   13136 result.go:70] checking object v1:Pod/kube-system/etcd-kind-control-plane2 by rule kelefstis.endocode.com/v1alpha1:RuleChecker/default/rules: 2 true, 0 false
+I0807 20:10:57.703682   13136 treecheck.go:45] add: v1:Pod/kube-system/etcd-kind-control-plane
+I0807 20:10:57.703849   13136 result.go:200] result Matches((k8s.gcr.io|gcr.io|quay.io/kubernetes-ingress-controller|quay.io/endocode|quay.io/coreos|docker.io/istio|docker.io/prom),k8s.gcr.io/etcd:3.3.10) = (true, ok)
+I0807 20:10:57.703901   13136 result.go:70] checking object v1:Pod/kube-system/etcd-kind-control-plane by rule kelefstis.endocode.com/v1alpha1:RuleChecker/default/rules: 2 true, 0 false
+I0807 20:10:57.703929   13136 treecheck.go:45] add: v1:Pod/kube-system/etcd-kind-control-plane3
+I0807 20:10:57.704101   13136 result.go:200] result Matches((k8s.gcr.io|gcr.io|quay.io/kubernetes-ingress-controller|quay.io/endocode|quay.io/coreos|docker.io/istio|docker.io/prom),k8s.gcr.io/etcd:3.3.10) = (true, ok)
+I0807 20:10:57.704140   13136 result.go:70] checking object v1:Pod/kube-system/etcd-kind-control-plane3 by rule kelefstis.endocode.com/v1alpha1:RuleChecker/default/rules: 2 true, 0 false
+I0807 20:10:57.704161   13136 treecheck.go:45] add: v1:Pod/kube-system/kindnet-lvz8c
+I0807 20:10:57.704345   13136 result.go:200] result Matches((k8s.gcr.io|gcr.io|quay.io/kubernetes-ingress-controller|quay.io/endocode|quay.io/coreos|docker.io/istio|docker.io/prom),kindest/kindnetd:0.5.0) = (false, ok)
+I0807 20:10:57.704392   13136 result.go:70] checking object v1:Pod/kube-system/kindnet-lvz8c by rule kelefstis.endocode.com/v1alpha1:RuleChecker/default/rules: 0 true, 2 false
+I0807 20:10:57.704414   13136 treecheck.go:45] add: v1:Pod/kube-system/kube-apiserver-kind-control-plane3
+I0807 20:10:57.704589   13136 result.go:200] result Matches((k8s.gcr.io|gcr.io|quay.io/kubernetes-ingress-controller|quay.io/endocode|quay.io/coreos|docker.io/istio|docker.io/prom),k8s.gcr.io/kube-apiserver:v1.15.0) = (true, ok)
+I0807 20:10:57.704639   13136 result.go:70] checking object v1:Pod/kube-system/kube-apiserver-kind-control-plane3 by rule kelefstis.endocode.com/v1alpha1:RuleChecker/default/rules: 2 true, 0 false
+I0807 20:10:57.704662   13136 treecheck.go:45] add: v1:Pod/kube-system/kube-proxy-tthj2
+I0807 20:10:57.704836   13136 result.go:200] result Matches((k8s.gcr.io|gcr.io|quay.io/kubernetes-ingress-controller|quay.io/endocode|quay.io/coreos|docker.io/istio|docker.io/prom),k8s.gcr.io/kube-proxy:v1.15.0) = (true, ok)
+I0807 20:10:57.704873   13136 result.go:70] checking object v1:Pod/kube-system/kube-proxy-tthj2 by rule kelefstis.endocode.com/v1alpha1:RuleChecker/default/rules: 2 true, 0 false
+I0807 20:10:57.704894   13136 treecheck.go:45] add: v1:Pod/kube-system/kindnet-vvwpg
+I0807 20:10:57.705084   13136 result.go:200] result Matches((k8s.gcr.io|gcr.io|quay.io/kubernetes-ingress-controller|quay.io/endocode|quay.io/coreos|docker.io/istio|docker.io/prom),kindest/kindnetd:0.5.0) = (false, ok)
+I0807 20:10:57.705125   13136 result.go:70] checking object v1:Pod/kube-system/kindnet-vvwpg by rule kelefstis.endocode.com/v1alpha1:RuleChecker/default/rules: 0 true, 2 false
+I0807 20:10:57.705161   13136 treecheck.go:45] add: v1:Pod/kube-system/kube-controller-manager-kind-control-plane
+I0807 20:10:57.705336   13136 result.go:200] result Matches((k8s.gcr.io|gcr.io|quay.io/kubernetes-ingress-controller|quay.io/endocode|quay.io/coreos|docker.io/istio|docker.io/prom),k8s.gcr.io/kube-controller-manager:v1.15.0) = (true, ok)
+I0807 20:10:57.705378   13136 result.go:70] checking object v1:Pod/kube-system/kube-controller-manager-kind-control-plane by rule kelefstis.endocode.com/v1alpha1:RuleChecker/default/rules: 2 true, 0 false
+I0807 20:10:57.705399   13136 treecheck.go:45] add: v1:Pod/kube-system/kube-apiserver-kind-control-plane2
+I0807 20:10:57.705593   13136 result.go:200] result Matches((k8s.gcr.io|gcr.io|quay.io/kubernetes-ingress-controller|quay.io/endocode|quay.io/coreos|docker.io/istio|docker.io/prom),k8s.gcr.io/kube-apiserver:v1.15.0) = (true, ok)
+I0807 20:10:57.705635   13136 result.go:70] checking object v1:Pod/kube-system/kube-apiserver-kind-control-plane2 by rule kelefstis.endocode.com/v1alpha1:RuleChecker/default/rules: 2 true, 0 false
+I0807 20:10:57.705656   13136 treecheck.go:45] add: v1:Pod/kube-system/kube-apiserver-kind-control-plane
+I0807 20:10:57.705827   13136 result.go:200] result Matches((k8s.gcr.io|gcr.io|quay.io/kubernetes-ingress-controller|quay.io/endocode|quay.io/coreos|docker.io/istio|docker.io/prom),k8s.gcr.io/kube-apiserver:v1.15.0) = (true, ok)
+I0807 20:10:57.706240   13136 result.go:70] checking object v1:Pod/kube-system/kube-apiserver-kind-control-plane by rule kelefstis.endocode.com/v1alpha1:RuleChecker/default/rules: 2 true, 0 false
+I0807 20:10:57.706285   13136 treecheck.go:45] add: v1:Pod/kube-system/kube-proxy-j7f75
+I0807 20:10:57.706480   13136 result.go:200] result Matches((k8s.gcr.io|gcr.io|quay.io/kubernetes-ingress-controller|quay.io/endocode|quay.io/coreos|docker.io/istio|docker.io/prom),k8s.gcr.io/kube-proxy:v1.15.0) = (true, ok)
+I0807 20:10:57.706518   13136 result.go:70] checking object v1:Pod/kube-system/kube-proxy-j7f75 by rule kelefstis.endocode.com/v1alpha1:RuleChecker/default/rules: 2 true, 0 false
+I0807 20:10:57.706539   13136 treecheck.go:45] add: v1:Pod/kube-system/kube-controller-manager-kind-control-plane3
+I0807 20:10:57.706710   13136 result.go:200] result Matches((k8s.gcr.io|gcr.io|quay.io/kubernetes-ingress-controller|quay.io/endocode|quay.io/coreos|docker.io/istio|docker.io/prom),k8s.gcr.io/kube-controller-manager:v1.15.0) = (true, ok)
+I0807 20:10:57.706754   13136 result.go:70] checking object v1:Pod/kube-system/kube-controller-manager-kind-control-plane3 by rule kelefstis.endocode.com/v1alpha1:RuleChecker/default/rules: 2 true, 0 false
+I0807 20:10:57.706774   13136 treecheck.go:45] add: v1:Pod/kube-system/kindnet-vgx8s
+I0807 20:10:57.706945   13136 result.go:200] result Matches((k8s.gcr.io|gcr.io|quay.io/kubernetes-ingress-controller|quay.io/endocode|quay.io/coreos|docker.io/istio|docker.io/prom),kindest/kindnetd:0.5.0) = (false, ok)
+I0807 20:10:57.706997   13136 result.go:70] checking object v1:Pod/kube-system/kindnet-vgx8s by rule kelefstis.endocode.com/v1alpha1:RuleChecker/default/rules: 0 true, 2 false
+I0807 20:10:57.707022   13136 treecheck.go:45] add: v1:Pod/kube-system/coredns-5c98db65d4-b4jq2
 ...
 ```
 

@@ -13,6 +13,10 @@ For a fast deployment, use the `install.sh` script in the `deployment` folder
 cd deployment
 ./install.sh
 ```
+### Dependencies
+
+There are no specical vendor depencies, however, implicitely it relies on a `k8s.io/client-go` 
+version 1.15, this version uses `HEAD kubernetes-1.15.1-beta.0`
 
 ### Building the Image
 

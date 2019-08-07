@@ -1,0 +1,48 @@
+apiVersion: kelefstis.endocode.com/v1alpha1
+kind: RuleChecker
+metadata:
+  name: rules
+  description: "my cluster, my rules"
+spec:
+  rules:
+    - kind: "Pod"
+      apiVersion: "v1"
+      metadata:
+        namespace:
+          eq: "lirumlarum"
+      spec:
+        containers:
+        - image:
+            matches: "\
+              (k8s.gcr.io|\
+              gcr.io|\
+              quay.io/kubernetes-ingress-controller|\
+              quay.io/endocode|\
+              quay.io/coreos|\
+              docker.io/istio|\
+              docker.io/prom)\
+              "
+            securityContext:
+              privileged:
+                equals: false
+                must: true
+        initContainers:
+        - image:
+            matches: "^(k8s.gcr.io|gcr.io|quay.io/kubernetes-ingress-controller|quay.io/endocode|quay.io/coreos|docker.io/istio|docker.io/prom)"
+            securityContext:
+              privileged:
+                equals: false
+                must: true
+    - kind: "Cluster"
+      apiVersion: "some/v1beta"
+      spec:
+        min: 3
+        max: 10
+    - kind: "Node"
+      apiVersion: "v1"
+      status:
+        allocatable:
+          cpu:
+            min: "2"
+          pods:
+            max: "200"

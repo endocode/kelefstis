@@ -13,9 +13,10 @@ For a fast deployment, use the `install.sh` script in the `deployment` folder
 cd deployment
 ./install.sh
 ```
+
 ### Dependencies
 
-There are no specical vendor depencies, however, implicitely it relies on a `k8s.io/client-go` 
+There are no specical vendor depencies, however, implicitely it relies on a `k8s.io/client-go`
 version 1.15, this version uses `HEAD kubernetes-1.15.1-beta.0`
 
 ### Building the Image
@@ -46,7 +47,7 @@ This particular example demonstrates how to perform one basic operation:
 * anything else is not tested, yet
 * test have been performed against [minikube v1.10](https://kubernetes.io/docs/setup/minikube/)
 
-## Deprecated 
+## Deprecated
 
 It makes no longer use of the generators in [k8s.io/code-generator](https://github.com/kubernetes/code-generator)
 to generate a typed client, informers, listers and deep-copy functions. You can
@@ -113,8 +114,6 @@ spec:
             max: "200"
 
 ```
-
-
 
 ## Details
 
@@ -247,13 +246,14 @@ be explicitely named.
 
 ## Check for privileged containers
 
-Running [Istio](https://istio.io/) in the standard configuration it is obvious, 
-that by adding a privileged container to the pod everybody can circumvent the entire security 
+Running [Istio](https://istio.io/) in the standard configuration it is obvious,
+that by adding a privileged container to the pod everybody can circumvent the entire security
 of the [Envoy](https://www.envoyproxy.io/) sidecar. This is a well documented [issue](https://github.com/istio/old_issues_repo/issues/172).
 
 Therefore, Istio can only be run securely with the [Istio CNI Plugin](https://github.com/istio/cni#istio-cni-plugin), which is not the default.
 
 To check for running privileged containers, the rule
+
 ```yaml
 ...
 spec:
@@ -268,6 +268,7 @@ spec:
                   equals: false
 ...
 ```
+
 should be used.
 
 ## Cleanup

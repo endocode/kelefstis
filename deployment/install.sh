@@ -73,8 +73,8 @@ kubectl create secret -n kube-system generic kelefstis --from-file=$TMP/config |
 kubectl apply -f role.yaml
 
 # create the rulechecker crd and the rules
-kubectl apply -f ../artifacts/examples/rulecheckers-crd.yaml || true
-kubectl apply -f ../artifacts/examples/rules.all.yaml  || true
+kubectl apply -f ../examples/rulecheckers-crd.yaml || true
+kubectl apply -f ../examples/rules.all.yaml  || true
 
 # create kelefstis logger
 kubectl apply -f k7s.yaml

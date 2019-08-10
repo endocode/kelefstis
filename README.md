@@ -45,13 +45,11 @@ This particular example demonstrates how to perform one basic operation:
 
 * check all the pod images against a matching regular expression.
 * anything else is not tested, yet
-* test have been performed against [minikube v1.10](https://kubernetes.io/docs/setup/minikube/)
+* test have been performed against [minikube v1.2.0](https://kubernetes.io/docs/setup/minikube/)
 
-## Deprecated
+## Removed
 
-It makes no longer use of the generators in [k8s.io/code-generator](https://github.com/kubernetes/code-generator)
-to generate a typed client, informers, listers and deep-copy functions. You can
-do this yourself using the `./hack/update-codegen.sh` script.
+It makes no longer use of the generators in [k8s.io/code-generator](https://github.com/kubernetes/code-generator). The typical `./hack/update-codegen.sh` ... script are not used.
 
 The [goju library](https://github.com/endocode/goju) is not longer used to implement checks
 of JSON or YAML definitions by these rules.
@@ -149,9 +147,13 @@ A Useful loglevel is `-v 2`, with higher values you get more verbose output.
 
 ```sh
 $ ./kelefstis -alsologtostderr -kubeconfig ~/.kube/config -v 2
-I1124 19:25:19.539835   29935 controller.go:149] Setting up event handlers
-I1124 19:25:19.540030   29935 controller.go:234] Starting controller
-I1124 19:25:19.540040   29935 controller.go:237] Waiting for informer caches to sync
+0808 09:46:43.461372   11022 main.go:197] Creating watch
+I0808 09:46:43.462124   11022 main.go:206] Creating channel
+I0808 09:46:43.478340   11022 main.go:60] add: kelefstis.endocode.com/v1alpha1:RuleChecker/default/rules
+I0808 09:46:43.478406   11022 main.go:60] add: kelefstis.endocode.com/v1alpha1:RuleChecker/default/rules
+I0808 09:46:43.478414   11022 main.go:60] add: kelefstis.endocode.com/v1alpha1:RuleChecker/default/rules
+I0808 09:46:43.478422   11022 main.go:156] adding rule kelefstis.endocode.com/v1alpha1:RuleChecker/default/rules
+I08
 ```
 
 Create some rules from a different terminal

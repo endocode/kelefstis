@@ -27,15 +27,13 @@ func (t *Check) Length(length string, array []interface{}) (bool, error) {
 }
 
 // Max compares max to val
-func (t *Check) Max(max string, val int) (bool, error) {
-	m, err := strconv.Atoi(max)
-	return m >= val, err
+func (t *Check) Max(max, val int64) (bool, error) {
+	return max >= val, nil
 }
 
 // Min compares min to the val
-func (t *Check) Min(min string, val int) (bool, error) {
-	m, err := strconv.Atoi(min)
-	return m <= val, err
+func (t *Check) Min(min, val int64) (bool, error) {
+	return min <= val, nil
 }
 
 // Eval evaluates an expression

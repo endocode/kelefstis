@@ -43,6 +43,6 @@ spec:
       status:
         allocatable:
           cpu:
-            min: "2"
+            min: 299
           pods:
-            max: "200"
+            max: 166

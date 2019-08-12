@@ -2,8 +2,10 @@ package main
 
 import (
 	"container/list"
+	"errors"
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -130,6 +132,36 @@ func (t *TreeCheck) AddError(format string, args ...interface{}) {
 	t.Result.ErrorHistory.PushBack(fmt.Errorf(errn+format, args...))
 }
 
+func (t *TreeCheck) typeCall(name string, inputs []reflect.Value) (result []reflect.Value, err error) {
+	v := reflect.ValueOf(&t.Check)
+	met := v.MethodByName(name)
+	if met.Kind() == reflect.Invalid {
+		err = errors.New("unknown method: " + name)
+		return
+	}
+	fun := reflect.TypeOf(met.Interface())
+	result = make([]reflect.Value, fun.NumIn())
+	for i := 0; i < fun.NumIn(); i++ {
+		if fun.In(i) == inputs[i].Type() {
+			result[i] = inputs[i]
+		} else {
+			glog.V(4).Infof("type mismatch, need to convert from %s to %s", inputs[i].Type(), fun.In(i))
+			if fun.In(i).Kind() == reflect.Int64 {
+				if inputs[i].Type().Kind() == reflect.String {
+					var i64 int64
+					i64, err = strconv.ParseInt(inputs[i].String(), 10, 64)
+					if err != nil {
+						return
+					}
+					result[i] = reflect.ValueOf(i64)
+				}
+			}
+		}
+	}
+	err = nil
+	return
+}
+
 func (t *TreeCheck) nestedCheck(offset string, c, r interface{}) {
 	f := reflect.ValueOf(r)
 	g := reflect.ValueOf(c)
@@ -171,23 +203,37 @@ func (t *TreeCheck) nestedCheck(offset string, c, r interface{}) {
 							t.nestedCheck(offset+"/"+i, b[i], a[i])
 						}
 					}
+				case reflect.Int64:
+					{
+						glog.Infof("found Int64 #######")
+					}
 				default:
 					{
 						s := reflect.Value(g).String()
-						glog.V(12).Infof("checking %s: %s by rule %s:%s", offset, s, i, a[i])
+						glog.V(12).Infof("checking %s: %s by rule %s:%s", offset, g, i, a[i])
 						inputs := make([]reflect.Value, 2)
 						inputs[1] = reflect.ValueOf(s)
 						inputs[0] = reflect.ValueOf(a[i])
 						n := strings.Title(i)
-						if glog.V(12) {
-							glog.Infof("n=%s %v", n, *t)
+						if glog.V(8) {
+							glog.Infof("method name=%s", n)
 						}
 
 						v := reflect.ValueOf(&t.Check)
 						met := v.MethodByName(n)
-						glog.V(12).Infof("  met = %s", met)
-						if met.Kind() != reflect.Invalid {
-							res := met.Call(inputs)
+
+						if met.Kind() == reflect.Invalid {
+							glog.Errorf("invalid method %s", n)
+						} else {
+							m := reflect.TypeOf(met.Interface())
+
+							glog.V(8).Infof("method = %v, input=%s:%v, %s:%v, args %v %v",
+								met, inputs[0].Type(), inputs[0], inputs[1].Type(), inputs[1], m.In(0), m.In(1))
+							r, err := t.typeCall(n, inputs)
+							if err != nil {
+								glog.Errorf("error creating args %s", err.Error())
+							}
+							res := met.Call(r)
 							bo := res[0].Bool()
 							e := "ok"
 							var ee error
@@ -197,12 +243,7 @@ func (t *TreeCheck) nestedCheck(offset string, c, r interface{}) {
 							}
 							t.Result.Bookkeep(bo, ee)
 
-							glog.V(8).Infof("result %s(%s,%s) = (%t, %s)", n, inputs[0], inputs[1], bo, e)
-							if bo {
-								t.Result.TrueCounter++
-							} else {
-								t.Result.FalseCounter++
-							}
+							glog.V(8).Infof("result %s(%v,%v) = (%t, %s)", n, inputs[0], inputs[1], bo, e)
 
 						}
 					}

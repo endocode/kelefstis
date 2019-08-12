@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"time"
 
 	"github.com/ghodss/yaml"
@@ -193,21 +194,24 @@ func NewController(cfg *restclient.Config,
 }
 
 func main() {
-
+	os.Mkdir("/tmp", 0777)
 	glog.Info("Creating watch")
 
 	eventObjectHandlers := EventHandlers(LogObject)
 	eventRuleCheckerHandlers := RuleEventHandlers(LogRuleChecker)
+	stop := make(chan struct{})
 
 	ruleController := NewController(cfg, "kelefstis.endocode.com", "v1alpha1", "rulecheckers", eventRuleCheckerHandlers)
 
-	podController := NewController(cfg, "", "v1", "pods", eventObjectHandlers)
-	//	nodeController := NewController(cfg, "", "v1", "nodes", eventObjectHandlers)
-	glog.Info("Creating channel")
-	stop := make(chan struct{})
-	go podController.Run(stop)
-	//	go nodeController.Run(stop)
 	go ruleController.Run(stop)
+
+	podController := NewController(cfg, "", "v1", "pods", eventObjectHandlers)
+	nodeController := NewController(cfg, "", "v1", "nodes", eventObjectHandlers)
+	glog.Info("Creating channel")
+
+	go podController.Run(stop)
+	go nodeController.Run(stop)
+
 	<-stop
 	glog.Info("Stopping")
 }

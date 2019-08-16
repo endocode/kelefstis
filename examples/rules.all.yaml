@@ -9,7 +9,7 @@ spec:
       apiVersion: "v1"
       metadata:
         namespace:
-          eq: "lirumlarum"
+          equals: "lirumlarum"
       spec:
         containers:
         - image:
@@ -22,10 +22,10 @@ spec:
               docker.io/istio|\
               docker.io/prom)\
               "
-            securityContext:
-              privileged:
-                equals: false
-                must: true
+        securityContext:
+            privileged:
+              equals: false
+              must: true
         initContainers:
         - image:
             matches: "^(k8s.gcr.io|gcr.io|quay.io/kubernetes-ingress-controller|quay.io/endocode|quay.io/coreos|docker.io/istio|docker.io/prom)"

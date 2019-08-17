@@ -210,7 +210,7 @@ func (t *TreeCheck) nestedCheck(offset string, c, r interface{}) {
 				default:
 					{
 						s := reflect.Value(g).String()
-						glog.V(12).Infof("checking %s: %s by rule %s:%s", offset, g, i, a[i])
+						glog.V(8).Infof("checking %s: %s by rule %s:%s", offset, g, i, a[i])
 						inputs := make([]reflect.Value, 2)
 						inputs[1] = reflect.ValueOf(s)
 						inputs[0] = reflect.ValueOf(a[i])

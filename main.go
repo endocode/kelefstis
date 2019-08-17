@@ -48,6 +48,19 @@ func canonicalName(u *unstructured.Unstructured) string {
 	return canonicalAPIVersionKind(u) + "/" + canonicalNamespaceName(u)
 }
 
+func containers(u *unstructured.Unstructured) (r []string) {
+	cs, _, _ := unstructured.NestedSlice(u.Object, "spec", "containers")
+
+	r = make([]string, len(cs))
+	for i, c := range cs {
+		cm, _ := c.(map[string]interface{})
+		n, _, _ := unstructured.NestedString(cm, "name")
+		r[i] = n
+	}
+
+	return
+}
+
 // LogRuleChecker logs the unstructured object go glog
 // with verbosity -v 8 you get also the yaml output
 func LogRuleChecker(verb string, o interface{}) {
@@ -174,6 +187,37 @@ func RuleEventHandlers(log func(string, interface{})) *cache.ResourceEventHandle
 	}
 }
 
+// ExecHandlers returns the functions for the event handling for
+// execing into containers
+func ExecHandlers(log func(string, interface{})) *cache.ResourceEventHandlerFuncs {
+	return &cache.ResourceEventHandlerFuncs{
+		AddFunc: func(o interface{}) {
+			u, _ := o.(*unstructured.Unstructured)
+			log("execing into", o)
+			for _, c := range containers(u) {
+				stdout, stderr, err := ExecuteRemoteCommand(u.GetNamespace(), u.GetName(), c, "cat /etc/debian_version || cat /etc lsb_release || echo not found")
+
+				if err == nil {
+					if glog.V(4) {
+						if stdout != "" {
+							glog.Infof("stdout:\n%s", stdout)
+						}
+						if stderr != "" {
+							glog.Infof("stderr:\n%s", stderr)
+						}
+					}
+				} else {
+					glog.Errorf("%s", err.Error())
+				}
+			}
+		},
+		DeleteFunc: func(o interface{}) {
+		},
+		UpdateFunc: func(old, new interface{}) {
+		},
+	}
+}
+
 // NewController creates a controller from group, config, version
 // and resource handlers
 func NewController(cfg *restclient.Config,
@@ -206,12 +250,14 @@ func main() {
 	go ruleController.Run(stop)
 
 	podController := NewController(cfg, "", "v1", "pods", eventObjectHandlers)
+	execHandlers := ExecHandlers(LogObject)
+	execController := NewController(cfg, "", "v1", "pods", execHandlers)
+
 	nodeController := NewController(cfg, "", "v1", "nodes", eventObjectHandlers)
 	glog.Info("Creating channel")
-
+	go execController.Run(stop)
 	go podController.Run(stop)
 	go nodeController.Run(stop)
-
 	<-stop
 	glog.Info("Stopping")
 }

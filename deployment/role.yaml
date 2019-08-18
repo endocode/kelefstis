@@ -4,7 +4,7 @@ metadata:
   name: reader
 rules:
 - apiGroups: [""] 
-  resources: ["nodes","pods","rulecheckers"]
+  resources: ["nodes","pods", "rulecheckers"]
   verbs: ["get", "watch", "list"]
 - apiGroups: ["apps"] 
   resources: ["deployments"]
@@ -12,6 +12,9 @@ rules:
 - apiGroups: ["kelefstis.endocode.com"] 
   resources: ["rulecheckers"]
   verbs: ["get", "watch", "list"]
+- apiGroups: [""] 
+  resources: [ "pods/exec"]
+  verbs: ["get", "watch", "list","create"] 
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
